@@ -5,7 +5,7 @@ use core::net::IpAddr;
 pub const EVENT_TYPE_OPEN: u8 = 0;
 pub const EVENT_TYPE_CLOSE: u8 = 1;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Event {
     pub r#type: u8,

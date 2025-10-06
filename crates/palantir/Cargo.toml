@@ -21,6 +21,7 @@ tokio = { workspace = true, features = [
     "net",
     "signal",
 ] }
+models = { workspace = true }
 
 [build-dependencies]
 aya-build = { workspace = true }

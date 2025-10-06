@@ -1,9 +1,9 @@
-use aya::programs::KProbe;
+use std::os::fd::AsRawFd;
+
+use aya::{maps::RingBuf, programs::KProbe};
 use log::{info, warn};
-use tokio::{
-    io::{Interest, unix::AsyncFd},
-    signal,
-};
+use models::Event;
+use tokio::io::{Interest, unix::AsyncFd};
 
 #[tokio::main]
 async fn main() {
@@ -34,13 +34,18 @@ async fn main() {
     for (name, program) in ebpf.programs_mut() {
         let probe: &mut KProbe = program.try_into().unwrap();
         _ = probe.load();
-
-        info!("attached program {}", name);
         _ = probe.attach(name, 0);
+        info!("attached program {}", name);
     }
 
-    let ctrl_c = signal::ctrl_c();
-    println!("Waiting for Ctrl-C...");
-    ctrl_c.await.unwrap();
-    println!("Exiting...");
+    let mut events = RingBuf::try_from(ebpf.map_mut("EVENTS").unwrap()).unwrap();
+
+    let poll = AsyncFd::new(events.as_raw_fd()).unwrap();
+    loop {
+        let mut guard = poll.readable().await.unwrap();
+        while let Some(item) = events.next() {
+            info!("{:?}", unsafe { *(item.as_ptr() as *const Event) });
+        }
+        guard.clear_ready();
+    }
 }

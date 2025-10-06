@@ -15,7 +15,7 @@ use aya_ebpf::{
     maps::RingBuf,
     programs::ProbeContext,
 };
-use aya_log_ebpf::{info, warn};
+use aya_log_ebpf::{trace, warn};
 
 #[map]
 static EVENTS: RingBuf = RingBuf::with_byte_size(2 << 12, 0);
@@ -102,14 +102,13 @@ fn try_handle_event(ctx: &ProbeContext, r#type: u8) -> Result<u32, i64> {
         }
         skc_family => {
             warn!(ctx, "Unkown sock_family {}", skc_family);
-
             None
         }
     };
 
     match event {
         Some(event) => {
-            info!(
+            trace!(
                 ctx,
                 "type: {}, src_addr: {}, src_port: {} dst_addr: {}, dst_port: {}, pid: {}, ts_offset_ns: {} ",
                 if event.r#type == 0 { "OPEN" } else { "CLOSE" },
@@ -125,7 +124,6 @@ fn try_handle_event(ctx: &ProbeContext, r#type: u8) -> Result<u32, i64> {
                 Some(mut entry) => {
                     entry.write(event);
                     entry.submit(BPF_RB_FORCE_WAKEUP.into());
-
                     Ok(0)
                 }
                 None => {

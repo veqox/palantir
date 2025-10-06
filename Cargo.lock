@@ -436,6 +436,7 @@ dependencies = [
  "env_logger",
  "libc",
  "log",
+ "models",
  "palantir-ebpf",
  "tokio",
 ]
