@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/models",
+    "crates/palantir",
+    "crates/palantir-ebpf",
+]
+default-members = ["crates/palantir"]
+
+[workspace.package]
+license = "MIT"
+edition = "2024"
+
+[workspace.dependencies]
+models = { path = "crates/models" }
+
+aya = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-build = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-log = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-log-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
+
+env_logger = { version = "0.11.5", default-features = false }
+libc = { version = "0.2.159", default-features = false }
+log = { version = "0.4.22", default-features = false }
+which = { version = "6.0.0", default-features = false }
+tokio = { version = "1.47.1", default-features = false }
+
+
+[profile.release.package.palantir-ebpf]
+debug = 2
+codegen-units = 1
