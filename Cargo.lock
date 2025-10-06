@@ -386,9 +386,6 @@ dependencies = [
 [[package]]
 name = "models"
 version = "0.1.0"
-dependencies = [
- "aya-log-common",
-]
 
 [[package]]
 name = "num_enum"

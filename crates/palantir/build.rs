@@ -14,8 +14,8 @@ fn main() {
     let ebpf_package = packages
         .into_iter()
         .find(|Package { name, .. }| name.as_str() == EBPF_PACKAGE_NAME)
-        .expect(&format!("could not find package {}", EBPF_PACKAGE_NAME));
+        .unwrap_or_else(|| panic!("could not find package {}", EBPF_PACKAGE_NAME));
 
     build_ebpf([ebpf_package], Toolchain::default())
-        .expect(&format!("failed to build {}", EBPF_PACKAGE_NAME))
+        .unwrap_or_else(|_| panic!("failed to build {}", EBPF_PACKAGE_NAME))
 }
