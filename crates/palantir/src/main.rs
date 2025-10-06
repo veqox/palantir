@@ -31,11 +31,13 @@ async fn main() {
         }
     }
 
-    ebpf.programs().for_each(|(k, v)| info!("{}: {:?}", k, v));
+    for (name, program) in ebpf.programs_mut() {
+        let probe: &mut KProbe = program.try_into().unwrap();
+        _ = probe.load();
 
-    let program: &mut KProbe = ebpf.program_mut("palantir").unwrap().try_into().unwrap();
-    _ = program.load();
-    _ = program.attach("tcp_connect", 0);
+        info!("attached program {}", name);
+        _ = probe.attach(name, 0);
+    }
 
     let ctrl_c = signal::ctrl_c();
     println!("Waiting for Ctrl-C...");

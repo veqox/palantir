@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 aya-ebpf = { workspace = true }
 aya-log-ebpf = { workspace = true }
+models = { workspace = true }
 
 [build-dependencies]
 which = { workspace = true }
