@@ -21,6 +21,10 @@ use tokio::{
     net::TcpListener,
     sync::broadcast,
 };
+use tower_http::{
+    cors::{self, CorsLayer},
+    trace::TraceLayer,
+};
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -162,6 +166,8 @@ async fn main() {
 
     let router = Router::new()
         .route("/events", get(events))
+        .layer(TraceLayer::new_for_http())
+        .layer(CorsLayer::new().allow_origin(cors::Any))
         .with_state(state);
 
     axum::serve(listener, router).await.unwrap();
