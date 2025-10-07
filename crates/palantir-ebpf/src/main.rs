@@ -3,14 +3,14 @@
 
 mod sock;
 
-use models::{EVENT_TYPE_CLOSE, EVENT_TYPE_OPEN, Event};
+use palantir_ebpf_common::{EVENT_TYPE_CLOSE, EVENT_TYPE_OPEN, Event};
 use sock::{AF_INET, AF_INET6, Sock};
 
 use core::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 use aya_ebpf::{
     bindings::BPF_RB_FORCE_WAKEUP,
-    helpers::{bpf_get_current_pid_tgid, bpf_probe_read_kernel, generated::bpf_ktime_get_ns},
+    helpers::{bpf_get_current_pid_tgid, bpf_probe_read_kernel},
     macros::{kprobe, map},
     maps::RingBuf,
     programs::ProbeContext,
@@ -57,7 +57,6 @@ fn try_handle_event(ctx: &ProbeContext, r#type: u8) -> Result<u32, i64> {
     let sock: *mut Sock = ctx.arg(0).ok_or(1)?;
 
     let pid = bpf_get_current_pid_tgid() as u32;
-    let ts_offset_ns = unsafe { bpf_ktime_get_ns() };
 
     let skc_family = unsafe { bpf_probe_read_kernel(&(*sock).sock_common.family) }?;
     let dst_port = u16::from_be(unsafe { bpf_probe_read_kernel(&(*sock).sock_common.dport)? });
@@ -79,7 +78,6 @@ fn try_handle_event(ctx: &ProbeContext, r#type: u8) -> Result<u32, i64> {
                 src_addr,
                 src_port,
                 pid,
-                ts_offset_ns,
             })
         }
         AF_INET6 => {
@@ -97,7 +95,6 @@ fn try_handle_event(ctx: &ProbeContext, r#type: u8) -> Result<u32, i64> {
                 src_addr,
                 src_port,
                 pid,
-                ts_offset_ns,
             })
         }
         skc_family => {
@@ -110,14 +107,13 @@ fn try_handle_event(ctx: &ProbeContext, r#type: u8) -> Result<u32, i64> {
         Some(event) => {
             trace!(
                 ctx,
-                "type: {}, src_addr: {}, src_port: {} dst_addr: {}, dst_port: {}, pid: {}, ts_offset_ns: {} ",
+                "type: {}, src_addr: {}, src_port: {} dst_addr: {}, dst_port: {}, pid: {}",
                 if event.r#type == 0 { "OPEN" } else { "CLOSE" },
                 event.src_addr,
                 event.src_port,
                 event.dst_addr,
                 event.dst_port,
                 event.pid,
-                event.ts_offset_ns
             );
 
             match EVENTS.reserve::<Event>(0) {

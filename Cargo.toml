@@ -1,9 +1,10 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/models",
     "crates/palantir",
     "crates/palantir-ebpf",
+    "crates/palantir-ebpf-common",
+
 ]
 default-members = ["crates/palantir"]
 
@@ -12,7 +13,7 @@ license = "MIT"
 edition = "2024"
 
 [workspace.dependencies]
-models = { path = "crates/models" }
+palantir-ebpf-common = { path = "crates/palantir-ebpf-common" }
 
 aya = { git = "https://github.com/aya-rs/aya", default-features = false }
 aya-build = { git = "https://github.com/aya-rs/aya", default-features = false }
@@ -20,11 +21,19 @@ aya-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
 aya-log = { git = "https://github.com/aya-rs/aya", default-features = false }
 aya-log-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
 
-env_logger = { version = "0.11.5", default-features = false }
 libc = { version = "0.2.159", default-features = false }
 log = { version = "0.4.22", default-features = false }
 which = { version = "6.0.0", default-features = false }
 tokio = { version = "1.47.1", default-features = false }
+axum = { version = "0.8.6", default-features = false }
+tracing = { version = "0.1.41", default-features = false }
+tracing-subscriber = { version = "0.3.20", default-features = false }
+futures-util = { version = "0.3.31", default-features = false }
+async-stream = { version = "0.3.6", default-features = false }
+chrono = { version = "0.4.42", default-features = false }
+serde = { version = "1.0.228", default-features = false }
+serde_json = { version = "1.0.145", default-features = false }
+reqwest = { version = "0.12.23", default-features = false }
 
 
 [profile.release.package.palantir-ebpf]
