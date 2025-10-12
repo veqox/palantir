@@ -46,35 +46,36 @@ for (const polygon of land.geometries) {
 }
 
 const beacons = new Set<string>();
-const traces = new Map<string, Trace>();
 
 {
 	const eventSource = new EventSource("http://localhost:3000/events");
 
 	eventSource.onmessage = async (e) => {
-		const { type, dst_addr, src_location, dst_location } = JSON.parse(e.data);
+		const { src_addr, dst_addr, src_location, dst_location } = JSON.parse(e.data);
 
-		if (type == 0) {
-			const trace = new Trace(gl, { from: geoToCartesian(src_location), to: geoToCartesian(dst_location) });
-			trace.setParent(scene);
-			traces.set(dst_addr, trace);
+		const trace = new Trace(gl, { from: geoToCartesian(src_location), to: geoToCartesian(dst_location) });
+		trace.setParent(scene);
 
-			await trace.fadeIn();
+		if (!beacons.has(src_addr)) {
+			let beacon = new Beacon(gl, { position: geoToCartesian(src_location), height: 0.3 });
+			beacon.setParent(scene);
+			beacon.animate();
 
-			if (!beacons.has(dst_addr)) {
-				let beacon = new Beacon(gl, { position: geoToCartesian(dst_location), height: 0.3 });
-				beacon.setParent(scene);
-				beacon.animate();
-
-				beacons.add(dst_addr);
-			}
-		} else if (type == 1) {
-			const trace = traces.get(dst_addr);
-			if (!trace) return;
-
-			await trace.fadeOut();
-			trace.setParent(null);
+			beacons.add(src_addr);
 		}
+
+		await trace.fadeIn();
+
+		if (!beacons.has(dst_addr)) {
+			let beacon = new Beacon(gl, { position: geoToCartesian(dst_location), height: 0.3 });
+			beacon.setParent(scene);
+			beacon.animate();
+
+			beacons.add(dst_addr);
+		}
+
+		await trace.fadeOut();
+		trace.setParent(null);
 	};
 }
 

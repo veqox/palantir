@@ -1,8 +1,11 @@
 [package]
-name = "palantir-ebpf-common"
+name = "net"
 version = "0.1.0"
 license.workspace = true
 edition.workspace = true
 
 [dependencies]
-net = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[features]
+serde = ["dep:serde"]

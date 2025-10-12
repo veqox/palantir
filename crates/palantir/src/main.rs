@@ -11,8 +11,12 @@ use axum::{
     response::{Sse, sse},
     routing::get,
 };
-use aya::{maps::RingBuf, programs::KProbe};
+use aya::{
+    maps::RingBuf,
+    programs::{SchedClassifier, TcAttachType},
+};
 use futures_util::Stream;
+use net::ip::IpProto;
 use palantir_ebpf_common;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -25,23 +29,34 @@ use tower_http::{
     cors::{self, CorsLayer},
     trace::TraceLayer,
 };
-use tracing::{info, warn};
+use tracing::{trace, warn};
 use tracing_subscriber::EnvFilter;
 
-#[derive(Serialize, Clone)]
+#[derive(Debug, Clone, Copy, Serialize)]
 struct Event {
-    pub r#type: u8,
     pub pid: u32,
     pub src_addr: IpAddr,
     pub dst_addr: IpAddr,
     pub src_port: u16,
     pub dst_port: u16,
-    pub src_location: Option<IpInfo>,
-    pub dst_location: Option<IpInfo>,
+    pub ts_offset_ns: u64,
+    pub proto: IpProto,
+    pub fragment: bool,
+    pub last_fragment: bool,
+    pub direction: Direction,
+    pub bytes: u16,
+    pub src_location: Option<LocationData>,
+    pub dst_location: Option<LocationData>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-struct IpInfo {
+#[derive(Debug, Clone, Copy, Serialize)]
+enum Direction {
+    Ingress,
+    Egress,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+struct LocationData {
     pub lon: f32,
     pub lat: f32,
 }
@@ -64,19 +79,19 @@ async fn main() {
     tokio::spawn({
         let tx = tx.clone();
         async move {
-            let src_location = Some(IpInfo {
-                lat: env::var("SRC_LOCATION_LAT")
-                    .expect("SRC_LOCATION_LAT is not defined")
+            let location = Some(LocationData {
+                lat: env::var("LOCATION_LAT")
+                    .expect("LOCATION_LAT is not defined")
                     .parse()
-                    .expect("SRC_LOCATION_LAT is not a valid f32"),
-                lon: env::var("SRC_LOCATION_LON")
-                    .expect("SRC_LOCATION_LON is not defined")
+                    .expect("LOCATION_LAT is not a valid f32"),
+                lon: env::var("LOCATION_LON")
+                    .expect("LOCATION_LON is not defined")
                     .parse()
-                    .expect("SRC_LOCATION_LON is not a valid f32"),
+                    .expect("LOCATION_LON is not a valid f32"),
             });
 
             let client = Client::new();
-            let mut cache = HashMap::<IpAddr, IpInfo>::new();
+            let mut cache = HashMap::<IpAddr, LocationData>::new();
 
             let mut ebpf = aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
                 env!("OUT_DIR"),
@@ -100,11 +115,28 @@ async fn main() {
                 }
             }
 
-            for (name, program) in ebpf.programs_mut() {
-                let probe: &mut KProbe = program.try_into().unwrap();
-                _ = probe.load();
-                _ = probe.attach(name, 0);
-                info!("attached program {}", name);
+            {
+                let probe: &mut SchedClassifier = ebpf
+                    .program_mut("tc_ingress")
+                    .expect("failed to get program tc_ingress")
+                    .try_into()
+                    .unwrap();
+                _ = probe.load().inspect_err(|err| warn!("{}", err));
+                _ = probe
+                    .attach("enp31s0", TcAttachType::Ingress)
+                    .inspect_err(|err| warn!("{}", err));
+            }
+
+            {
+                let probe: &mut SchedClassifier = ebpf
+                    .program_mut("tc_egress")
+                    .expect("failed to get program tc_egress")
+                    .try_into()
+                    .unwrap();
+                _ = probe.load().inspect_err(|err| warn!("{}", err));
+                _ = probe
+                    .attach("enp31s0", TcAttachType::Egress)
+                    .inspect_err(|err| warn!("{}", err));
             }
 
             let mut events = RingBuf::try_from(ebpf.map_mut("EVENTS").unwrap()).unwrap();
@@ -114,7 +146,6 @@ async fn main() {
                 let mut guard = poll.readable().await.unwrap();
                 while let Some(item) = events.next() {
                     let event = unsafe { *(item.as_ptr() as *const palantir_ebpf_common::Event) };
-                    info!("{:?}", event);
 
                     if event.src_addr.is_multicast()
                         || event.dst_addr.is_multicast()
@@ -123,34 +154,77 @@ async fn main() {
                         continue;
                     }
 
-                    if !cache.contains_key(&event.dst_addr) {
-                        match client
-                            .get(format!("http://ip-api.com/json/{}", event.dst_addr))
-                            .send()
-                            .await
-                            .unwrap()
-                            .json()
-                            .await
-                        {
-                            Ok(info) => {
-                                _ = cache.insert(event.dst_addr, info);
-                            }
-                            Err(_) => {
-                                warn!("failed to get ip info for {}, skipping", event.dst_addr);
-                                continue;
-                            }
-                        };
+                    trace!("{:?}", event);
+
+                    if event.src_addr.is_global() {
+                        if !cache.contains_key(&event.src_addr) {
+                            match client
+                                .get(format!("http://ip-api.com/json/{}", event.src_addr))
+                                .send()
+                                .await
+                                .unwrap()
+                                .json()
+                                .await
+                            {
+                                Ok(info) => {
+                                    _ = cache.insert(event.src_addr, info);
+                                }
+                                Err(_) => {
+                                    warn!("failed to get ip info for {}, skipping", event.src_addr);
+                                    continue;
+                                }
+                            };
+                        }
+                    }
+
+                    if event.dst_addr.is_global() {
+                        if !cache.contains_key(&event.dst_addr) {
+                            match client
+                                .get(format!("http://ip-api.com/json/{}", event.dst_addr))
+                                .send()
+                                .await
+                                .unwrap()
+                                .json()
+                                .await
+                            {
+                                Ok(info) => {
+                                    _ = cache.insert(event.dst_addr, info);
+                                }
+                                Err(_) => {
+                                    warn!("failed to get ip info for {}, skipping", event.dst_addr);
+                                    continue;
+                                }
+                            };
+                        }
                     }
 
                     let event = Event {
-                        r#type: event.r#type,
                         pid: event.pid,
                         src_addr: event.src_addr,
                         dst_addr: event.dst_addr,
                         src_port: event.src_port,
                         dst_port: event.dst_port,
-                        src_location: src_location.clone(),
-                        dst_location: cache.get(&event.dst_addr).cloned(),
+                        ts_offset_ns: event.ts_offset_ns,
+                        proto: event.proto,
+                        fragment: event.fragment,
+                        last_fragment: event.last_fragment,
+                        direction: match event.direction {
+                            palantir_ebpf_common::Direction::Ingress => Direction::Ingress,
+                            palantir_ebpf_common::Direction::Egress => Direction::Egress,
+                        },
+                        bytes: event.bytes,
+                        src_location: cache.get(&event.src_addr).cloned().or_else(|| {
+                            match event.direction {
+                                palantir_ebpf_common::Direction::Egress => location,
+                                palantir_ebpf_common::Direction::Ingress => None,
+                            }
+                        }),
+                        dst_location: cache.get(&event.dst_addr).cloned().or_else(|| {
+                            match event.direction {
+                                palantir_ebpf_common::Direction::Egress => None,
+                                palantir_ebpf_common::Direction::Ingress => location,
+                            }
+                        }),
                     };
 
                     _ = tx.send(event);

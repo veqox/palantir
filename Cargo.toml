@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = [
+members = ["crates/net",
     "crates/palantir",
     "crates/palantir-ebpf",
     "crates/palantir-ebpf-common",
@@ -14,6 +14,7 @@ edition = "2024"
 
 [workspace.dependencies]
 palantir-ebpf-common = { path = "crates/palantir-ebpf-common" }
+net = { path = "crates/net" }
 
 aya = { git = "https://github.com/aya-rs/aya", default-features = false }
 aya-build = { git = "https://github.com/aya-rs/aya", default-features = false }

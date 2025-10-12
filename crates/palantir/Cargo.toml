@@ -21,7 +21,7 @@ tokio = { workspace = true, features = [
 ] }
 axum = { workspace = true, features = ["http1", "http2", "tokio", "macros", "tower-log"] }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "tracing-log"] }
 futures-util = { workspace = true }
 palantir-ebpf-common = { workspace = true }
 async-stream = { workspace = true }
@@ -30,6 +30,9 @@ serde_json = { workspace = true, features = ["std"]}
 serde = { workspace = true, features = ["derive"] }
 reqwest = { workspace = true, features = ["http2", "native-tls", "gzip", "json"] }
 tower-http = { workspace = true, features = ["trace", "cors"] }
+net = { workspace = true, features = ["serde"] }
+
+
 
 
 [build-dependencies]
