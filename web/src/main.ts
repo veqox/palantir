@@ -51,7 +51,12 @@ const beacons = new Set<string>();
 	const eventSource = new EventSource("http://localhost:3000/events");
 
 	eventSource.onmessage = async (e) => {
-		const { src_addr, dst_addr, src_location, dst_location } = JSON.parse(e.data);
+		const { src_addr, dst_addr, src_location, dst_location } = JSON.parse(e.data, (key, value) => {
+			if (key === "ts") {
+				return new Date(value.secs_since_epoch * 1000 + value.nanos_since_epoch / 1_000_000);
+			}
+			return value;
+		});
 
 		const trace = new Trace(gl, { from: geoToCartesian(src_location), to: geoToCartesian(dst_location) });
 		trace.setParent(scene);

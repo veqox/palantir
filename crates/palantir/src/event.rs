@@ -1,4 +1,7 @@
-use std::net::IpAddr;
+use std::{
+    net::IpAddr,
+    time::{Duration, SystemTime},
+};
 
 use net::ip::IpProto;
 use palantir_ebpf_common::{DIRECTION_EGRESS, DIRECTION_INGRESS, RawEvent};
@@ -11,7 +14,7 @@ pub struct Event {
     pub dst_addr: IpAddr,
     pub src_port: u16,
     pub dst_port: u16,
-    pub ts_offset_ns: u64,
+    pub ts: SystemTime,
     pub proto: IpProto,
     pub fragment: bool,
     pub last_fragment: bool,
@@ -21,10 +24,8 @@ pub struct Event {
     pub dst_location: Option<LocationData>,
 }
 
-impl TryFrom<RawEvent> for Event {
-    type Error = ();
-
-    fn try_from(value: RawEvent) -> Result<Self, Self::Error> {
+impl Event {
+    pub fn try_from_raw(value: RawEvent, boot_time: SystemTime) -> Result<Event, ()> {
         let direction = value.direction.try_into()?;
 
         Ok(Event {
@@ -33,7 +34,7 @@ impl TryFrom<RawEvent> for Event {
             dst_addr: value.dst_addr,
             src_port: value.src_port,
             dst_port: value.dst_port,
-            ts_offset_ns: value.ts_offset_ns,
+            ts: boot_time + Duration::from_nanos(value.ts_offset_ns),
             proto: value.proto,
             fragment: value.fragment,
             last_fragment: value.last_fragment,

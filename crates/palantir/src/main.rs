@@ -6,9 +6,11 @@ use std::{
     collections::{HashMap, hash_map::Entry},
     convert::Infallible,
     env,
+    mem::zeroed,
     net::IpAddr,
     os::fd::AsRawFd,
     sync::Arc,
+    time::{Duration, SystemTime},
 };
 
 use async_stream::stream;
@@ -24,6 +26,7 @@ use aya::{
     programs::{SchedClassifier, TcAttachType},
 };
 use futures_util::Stream;
+use libc::{CLOCK_BOOTTIME, CLOCK_REALTIME, clock_gettime, timespec};
 use palantir_ebpf_common::{self, RawEvent};
 use reqwest::Client;
 use tokio::{
@@ -63,6 +66,20 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
+
+    let boot_time = unsafe {
+        let mut ts: timespec = zeroed();
+        clock_gettime(CLOCK_BOOTTIME, &mut ts);
+        Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32)
+    };
+
+    let real_time = unsafe {
+        let mut ts: timespec = zeroed();
+        clock_gettime(CLOCK_REALTIME, &mut ts);
+        Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32)
+    };
+
+    let boot_time = SystemTime::UNIX_EPOCH + (real_time - boot_time);
 
     let (tx, _) = broadcast::channel(64);
 
@@ -135,7 +152,7 @@ async fn main() {
                         };
                     }
 
-                    let mut event: Event = match raw_event.try_into() {
+                    let mut event = match Event::try_from_raw(raw_event, boot_time) {
                         Ok(event) => event,
                         Err(_) => {
                             warn!("failed to convert RawEvent to Event");
