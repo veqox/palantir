@@ -18,7 +18,7 @@ use net::{
     tcp::TcpHdr,
     udp::UdpHdr,
 };
-use palantir_ebpf_common::{DIRECTION_EGRESS, DIRECTION_INGRESS, RawEvent};
+use palantir_ebpf_common::{Direction, RawEvent};
 
 const IPV6_MAX_EXTENSION_HEADEAR_COUNT: usize = 8;
 
@@ -27,7 +27,7 @@ static EVENTS: RingBuf = RingBuf::with_byte_size(4096 * 20, 0);
 
 #[classifier]
 pub fn tc_ingress(ctx: TcContext) -> i32 {
-    match try_handle_packet(&ctx, DIRECTION_INGRESS) {
+    match try_handle_packet(&ctx, Direction::Ingress) {
         Ok(ret) => ret,
         Err(_) => TC_ACT_OK,
     }
@@ -35,13 +35,13 @@ pub fn tc_ingress(ctx: TcContext) -> i32 {
 
 #[classifier]
 pub fn tc_egress(ctx: TcContext) -> i32 {
-    match try_handle_packet(&ctx, DIRECTION_EGRESS) {
+    match try_handle_packet(&ctx, Direction::Egress) {
         Ok(ret) => ret,
         Err(_) => TC_ACT_OK,
     }
 }
 
-fn try_handle_packet(ctx: &TcContext, direction: u8) -> Result<i32, ()> {
+fn try_handle_packet(ctx: &TcContext, direction: Direction) -> Result<i32, ()> {
     let pid = bpf_get_current_pid_tgid() as u32;
     let ts_offset_ns = unsafe { bpf_ktime_get_ns() };
 

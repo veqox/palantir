@@ -1,5 +1,6 @@
 #![feature(ip)]
 
+mod api;
 mod event;
 
 use std::{
@@ -27,12 +28,11 @@ use aya::{
 };
 use futures_util::Stream;
 use libc::{CLOCK_BOOTTIME, CLOCK_REALTIME, clock_gettime, timespec};
-use palantir_ebpf_common::{self, RawEvent};
-use reqwest::Client;
+use palantir_ebpf_common::{self, Direction, RawEvent};
 use tokio::{
     io::{Interest, unix::AsyncFd},
     net::TcpListener,
-    sync::broadcast,
+    sync::{Mutex, broadcast},
 };
 use tower_http::{
     cors::{self, CorsLayer},
@@ -41,24 +41,33 @@ use tower_http::{
 use tracing::{trace, warn};
 use tracing_subscriber::EnvFilter;
 
-use crate::event::{Direction, Event, LocationData};
+use crate::{
+    api::{IpInfo, IpInfoClient},
+    event::{Event, Packet, Peer},
+};
 
 #[derive(Clone)]
 struct AppState {
     tx: broadcast::Sender<Event>,
+    peers: Arc<Mutex<HashMap<IpAddr, Peer>>>,
 }
 
 #[tokio::main]
 async fn main() {
-    let location = LocationData {
-        lat: env::var("LOCATION_LAT")
-            .expect("LOCATION_LAT is not defined")
+    let client = IpInfoClient::new();
+
+    let server_peer = Peer {
+        addr: env::var("SERVER_ADDR")
+            .expect("SERVER_ADDR is not defined")
             .parse()
-            .expect("LOCATION_LAT is not a valid f32"),
-        lon: env::var("LOCATION_LON")
-            .expect("LOCATION_LON is not defined")
-            .parse()
-            .expect("LOCATION_LON is not a valid f32"),
+            .expect("SERVER_ADDR is not a valid IpAddr"),
+        info: client
+            .query_self()
+            .await
+            .expect("failed to get server location"),
+        ingress_bytes: 0,
+        egress_bytes: 0,
+        last_message: None,
     };
 
     let iface = env::var("IFACE").expect("IFACE is not defined");
@@ -83,14 +92,19 @@ async fn main() {
 
     let (tx, _) = broadcast::channel(64);
 
-    let state = Arc::new(AppState { tx: tx.clone() });
+    let state = Arc::new(AppState {
+        tx: tx.clone(),
+        peers: Arc::new(Mutex::new(HashMap::from_iter([(
+            server_peer.addr,
+            server_peer,
+        )]))),
+    });
 
     tokio::spawn({
         let tx = tx.clone();
+        let state = state.clone();
         async move {
-            let client = Client::new();
-            let mut cache = HashMap::<IpAddr, LocationData>::new();
-
+            let mut cache = HashMap::<IpAddr, IpInfo>::new();
             let mut ebpf = init_ebpf(&iface);
 
             let mut events = RingBuf::try_from(ebpf.map_mut("EVENTS").unwrap()).unwrap();
@@ -100,78 +114,80 @@ async fn main() {
                 let mut guard = poll.readable().await.unwrap();
                 while let Some(item) = events.next() {
                     let raw_event = unsafe { *(item.as_ptr() as *const RawEvent) };
+                    let peer_addr = raw_event.peer_addr();
 
-                    if raw_event.src_addr.is_multicast()
-                        || raw_event.dst_addr.is_multicast()
-                        || (!raw_event.src_addr.is_global() && !raw_event.dst_addr.is_global())
-                    {
+                    if peer_addr.is_multicast() || !peer_addr.is_global() {
                         continue;
                     }
 
                     trace!("{:?}", raw_event);
 
-                    if raw_event.src_addr.is_global()
-                        && let Entry::Vacant(entry) = cache.entry(raw_event.src_addr)
-                    {
-                        match client
-                            .get(format!("http://ip-api.com/json/{}", raw_event.src_addr))
-                            .send()
-                            .await
-                            .unwrap()
-                            .json()
-                            .await
-                        {
-                            Ok(info) => {
-                                _ = entry.insert(info);
-                            }
-                            Err(_) => {
-                                warn!("failed to get ip info for {}, skipping", raw_event.src_addr);
+                    let peer_info = match cache.entry(peer_addr) {
+                        Entry::Occupied(entry) => entry.get().clone(),
+                        Entry::Vacant(entry) => match client.query(peer_addr).await {
+                            Some(info) => entry.insert(info).clone(),
+                            None => {
+                                warn!("failed to get ip info for {}, skipping", peer_addr);
                                 continue;
                             }
-                        };
-                    }
-
-                    if raw_event.dst_addr.is_global()
-                        && let Entry::Vacant(entry) = cache.entry(raw_event.dst_addr)
-                    {
-                        match client
-                            .get(format!("http://ip-api.com/json/{}", raw_event.dst_addr))
-                            .send()
-                            .await
-                            .unwrap()
-                            .json()
-                            .await
-                        {
-                            Ok(info) => {
-                                _ = entry.insert(info);
-                            }
-                            Err(_) => {
-                                warn!("failed to get ip info for {}, skipping", raw_event.dst_addr);
-                                continue;
-                            }
-                        };
-                    }
-
-                    let mut event = match Event::try_from_raw(raw_event, boot_time) {
-                        Ok(event) => event,
-                        Err(_) => {
-                            warn!("failed to convert RawEvent to Event");
-                            continue;
-                        }
+                        },
                     };
 
-                    match event.direction {
-                        Direction::Ingress => {
-                            event.src_location = cache.get(&event.src_addr).cloned();
-                            event.dst_location = Some(location);
+                    {
+                        let mut peers = state.peers.lock().await;
+
+                        let mut is_new = false;
+
+                        let peer = peers.entry(peer_addr).or_insert_with(|| {
+                            is_new = true;
+                            Peer {
+                                addr: peer_addr,
+                                ingress_bytes: 0,
+                                egress_bytes: 0,
+                                last_message: None,
+                                info: peer_info,
+                            }
+                        });
+
+                        let bytes = raw_event.bytes as u64;
+                        match raw_event.direction {
+                            Direction::Ingress => peer.ingress_bytes += bytes,
+                            Direction::Egress => peer.egress_bytes += bytes,
                         }
-                        Direction::Egress => {
-                            event.src_location = Some(location);
-                            event.dst_location = cache.get(&event.dst_addr).cloned();
+
+                        peer.last_message = Some(raw_event.timestamp(boot_time));
+
+                        if is_new {
+                            let _ = tx.send(Event::Peer(peer.clone()));
                         }
                     }
 
-                    _ = tx.send(event);
+                    {
+                        let mut peers = state.peers.lock().await;
+
+                        match peers.entry(raw_event.src_addr) {
+                            Entry::Occupied(mut entry) => {
+                                let peer = entry.get_mut();
+
+                                let bytes = raw_event.bytes as u64;
+                                match raw_event.direction {
+                                    Direction::Ingress => peer.ingress_bytes += bytes,
+                                    Direction::Egress => peer.egress_bytes += bytes,
+                                }
+                            }
+                            Entry::Vacant(_) => {}
+                        }
+                    }
+
+                    let packet = Packet {
+                        src_addr: raw_event.src_addr,
+                        dst_addr: raw_event.dst_addr,
+                        proto: raw_event.proto,
+                        bytes: raw_event.bytes,
+                        timestamp: raw_event.timestamp(boot_time),
+                    };
+
+                    _ = tx.send(Event::Packet(packet));
                 }
                 guard.clear_ready();
             }
@@ -245,8 +261,16 @@ async fn events(
     State(state): State<Arc<AppState>>,
 ) -> Sse<impl Stream<Item = Result<sse::Event, Infallible>>> {
     let mut rx = state.tx.subscribe();
+    let peers: Vec<_> = {
+        let peers = state.peers.lock().await;
+        peers.values().cloned().collect()
+    };
 
     let stream = stream! {
+        for peer in peers {
+            yield Ok(sse::Event::default().data(serde_json::to_string(&Event::Peer(peer)).unwrap()))
+        }
+
         while let Ok(event) = rx.recv().await {
             yield Ok(sse::Event::default().data(serde_json::to_string(&event).unwrap()))
         }

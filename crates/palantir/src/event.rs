@@ -1,71 +1,32 @@
-use std::{
-    net::IpAddr,
-    time::{Duration, SystemTime},
-};
+use std::{net::IpAddr, time::SystemTime};
 
 use net::ip::IpProto;
-use palantir_ebpf_common::{DIRECTION_EGRESS, DIRECTION_INGRESS, RawEvent};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, Serialize)]
-pub struct Event {
-    pub pid: u32,
+use crate::api::IpInfo;
+
+#[derive(Debug, Clone, Serialize)]
+pub enum Event {
+    #[serde(rename = "peer")]
+    Peer(Peer),
+    #[serde(rename = "packet")]
+    Packet(Packet),
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Peer {
+    pub addr: IpAddr,
+    pub info: IpInfo,
+    pub ingress_bytes: u64,
+    pub egress_bytes: u64,
+    pub last_message: Option<SystemTime>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Packet {
+    pub proto: IpProto,
     pub src_addr: IpAddr,
     pub dst_addr: IpAddr,
-    pub src_port: u16,
-    pub dst_port: u16,
-    pub ts: SystemTime,
-    pub proto: IpProto,
-    pub fragment: bool,
-    pub last_fragment: bool,
-    pub direction: Direction,
     pub bytes: u16,
-    pub src_location: Option<LocationData>,
-    pub dst_location: Option<LocationData>,
-}
-
-impl Event {
-    pub fn try_from_raw(value: RawEvent, boot_time: SystemTime) -> Result<Event, ()> {
-        let direction = value.direction.try_into()?;
-
-        Ok(Event {
-            pid: value.pid,
-            src_addr: value.src_addr,
-            dst_addr: value.dst_addr,
-            src_port: value.src_port,
-            dst_port: value.dst_port,
-            ts: boot_time + Duration::from_nanos(value.ts_offset_ns),
-            proto: value.proto,
-            fragment: value.fragment,
-            last_fragment: value.last_fragment,
-            direction,
-            bytes: value.bytes,
-            src_location: None,
-            dst_location: None,
-        })
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize)]
-pub enum Direction {
-    Ingress,
-    Egress,
-}
-
-impl TryFrom<u8> for Direction {
-    type Error = ();
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            DIRECTION_INGRESS => Ok(Self::Ingress),
-            DIRECTION_EGRESS => Ok(Self::Egress),
-            _ => Err(()),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct LocationData {
-    pub lon: f32,
-    pub lat: f32,
+    pub timestamp: SystemTime,
 }

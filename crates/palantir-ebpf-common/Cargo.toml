@@ -6,3 +6,6 @@ edition.workspace = true
 
 [dependencies]
 net = { workspace = true }
+
+[features]
+std = []

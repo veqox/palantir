@@ -1,10 +1,6 @@
 import { Vec3 } from "ogl";
 
-export type GeoCoordinate = { lat: number; lon: number };
-
-export function geoToCartesian(coordinate: GeoCoordinate): Vec3 {
-	const { lat, lon } = coordinate;
-
+export function toCartesian({ lat, lon }: { lat: number; lon: number }): Vec3 {
 	const phi = ((90 - lat) * Math.PI) / 180;
 	const theta = ((lon + 180) * Math.PI) / 180;
 

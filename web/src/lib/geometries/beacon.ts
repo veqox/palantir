@@ -1,11 +1,33 @@
-import { Path, Tube, Mesh, type OGLRenderingContext, Program, Vec3, Color, Transform, Sphere } from "ogl";
-import fragment from "./fragment.glsl?raw";
-import vertex from "./vertex.glsl?raw";
+import { Path, Tube, Mesh, type OGLRenderingContext, Program, Vec3, Color, Transform, Sphere, Raycast } from "ogl";
+import { glsl } from "$lib/utils/glsl";
 
 type BeaconOptions = {
 	position: Vec3;
 	height: number;
 };
+
+const fragment = glsl`#version 300 es
+precision highp float;
+
+uniform vec3 color;
+
+out vec4 fragColor;
+
+void main() {
+    fragColor = vec4(color, 1);
+}`;
+
+const vertex = glsl`#version 300 es
+precision highp float;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+in vec3 position;
+
+void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
 
 export class Beacon extends Transform {
 	private static programs: Record<string, Program> = {};
@@ -55,21 +77,44 @@ export class Beacon extends Transform {
 		this.addChild(sphere);
 	}
 
-	animate() {
+	fadeIn() {
 		const line = this.meshes.line.geometry as Tube;
 		const step = Math.min(Math.round(line.indices.length / 60), line.indices.length - this.t);
 		this.meshes.sphere.visible = false;
 
-		const update = () => {
-			this.t += step;
+		return new Promise<void>((resolve) => {
+			const update = () => {
+				this.t += step;
 
-			if (this.t < line.indices.length) {
-				line.setDrawRange(0, this.t);
-				requestAnimationFrame(update);
-			} else {
-				this.meshes.sphere.visible = true;
-			}
-		};
-		update();
+				if (this.t < line.indices.length) {
+					line.setDrawRange(0, this.t);
+					requestAnimationFrame(update);
+				} else {
+					this.meshes.sphere.visible = true;
+					resolve();
+				}
+			};
+			update();
+		});
+	}
+
+	fadeOut() {
+		const line = this.meshes.line.geometry as Tube;
+		const step = Math.min(Math.round(line.indices.length / 60), line.indices.length - this.t);
+		this.meshes.sphere.visible = false;
+
+		return new Promise<void>((resolve) => {
+			const update = () => {
+				this.t += step;
+
+				if (this.t < line.indices.length * 2) {
+					line.setDrawRange(this.t - line.indices.length, line.indices.length - (this.t - line.indices.length));
+					requestAnimationFrame(update);
+				} else {
+					resolve();
+				}
+			};
+			update();
+		});
 	}
 }
