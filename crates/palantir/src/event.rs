@@ -3,7 +3,7 @@ use std::{net::IpAddr, time::SystemTime};
 use net::ip::IpProto;
 use serde::Serialize;
 
-use crate::api::IpInfo;
+use crate::resolver::IpInfo;
 
 #[derive(Debug, Clone, Serialize)]
 pub enum Event {

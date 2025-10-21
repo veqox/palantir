@@ -9,13 +9,7 @@ export interface Peer {
 export interface IpInfo {
 	lat: number;
 	lon: number;
-	country: string;
-	region: string;
-	city: string;
-	isp: string;
-	mobile: boolean;
-	proxy: boolean;
-	hosting: boolean;
+	source: string;
 }
 
 export interface Packet {

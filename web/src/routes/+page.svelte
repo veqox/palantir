@@ -31,6 +31,8 @@
             .sort((a, b) => b.ingress_bytes + b.egress_bytes - (a.ingress_bytes + a.egress_bytes));
     });
 
+    let ms = $state(0);
+
     let camera: Camera;
     let controls: Orbit;
     let scene: Transform;
@@ -100,7 +102,11 @@
             }
         };
 
-        function update() {
+        let lastFrameTime: number = performance.now();
+        function update(now: number) {
+            ms = now - lastFrameTime;
+            lastFrameTime = now;
+
             renderer.render({ scene, camera });
             controls.update();
             requestAnimationFrame(update);
@@ -111,6 +117,10 @@
 
 <canvas bind:this={canvas} class="block h-screen w-screen"></canvas>
 
+<div class="absolute left-8 top-8 text-white p-4 border backdrop-blur-md">
+    <p>{Math.round(ms)} ms</p>
+</div>
+
 <div class="absolute right-8 top-8 text-white p-4 border backdrop-blur-md">
     <table class="border-separate border-spacing-x-2">
         <tbody>
@@ -119,9 +129,17 @@
                     <td>{peer.addr}</td>
                     <td class="text-green-500">{formatBytes(peer.ingress_bytes)}</td>
                     <td class="text-red-500">{formatBytes(peer.egress_bytes)}</td>
-                    <td>{relativeTimeFormatter.format(Math.round((peer.last_message.getTime() - now.getTime()) / 1000), "second")}</td>
+                    <td>{relativeTimeFormatter.format(Math.round((peer.last_message?.getTime() - now.getTime()) / 1000), "second")}</td>
                     <td>
-                        <button title="location" type="button" onclick={() => {}} class="cursor-pointer">
+                        <button
+                            title="location"
+                            type="button"
+                            onclick={() => {}}
+                            class="cursor-pointer"
+                            class:bg-green-500={peer.info.source === "City"}
+                            class:bg-orange-500={peer.info.source === "RegisteredCountry"}
+                            class:bg-gray-500={peer.info.source === "Manual"}
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" class="fill-white">
                                 <path
                                     d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q152 0 263.5 98T876-538q-20-10-41.5-15.5T790-560q-19-73-68.5-130T600-776v16q0 33-23.5 56.5T520-680h-80v80q0 17-11.5 28.5T400-560h-80v80h240q11 0 20.5 5.5T595-459q-17 27-26 57t-9 62q0 63 32.5 117T659-122q-41 20-86 31t-93 11Zm-40-82v-78q-33 0-56.5-23.5T360-320v-40L168-552q-3 18-5.5 36t-2.5 36q0 121 79.5 212T440-162Zm340 82q-7 0-12-4t-7-10q-11-35-31-65t-43-59q-21-26-34-57t-13-65q0-58 41-99t99-41q58 0 99 41t41 99q0 34-13.5 64.5T873-218q-23 29-43 59t-31 65q-2 6-7 10t-12 4Zm0-113q10-17 22-31.5t23-29.5q14-19 24.5-40.5T860-340q0-33-23.5-56.5T780-420q-33 0-56.5 23.5T700-340q0 24 10.5 45.5T735-254q12 15 23.5 29.5T780-193Zm0-97q-21 0-35.5-14.5T730-340q0-21 14.5-35.5T780-390q21 0 35.5 14.5T830-340q0 21-14.5 35.5T780-290Z"

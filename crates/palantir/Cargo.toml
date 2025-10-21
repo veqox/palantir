@@ -31,9 +31,8 @@ serde = { workspace = true, features = ["derive"] }
 reqwest = { workspace = true, features = ["http2", "native-tls", "gzip", "json"] }
 tower-http = { workspace = true, features = ["trace", "cors"] }
 net = { workspace = true, features = ["serde"] }
-
-
-
+maxminddb = { workspace = true, features = ["mmap", "simdutf8"] }
+my_country = { workspace = true, features = ["alpha2", "geo", "all_countries"] }
 
 [build-dependencies]
 aya-build = { workspace = true }

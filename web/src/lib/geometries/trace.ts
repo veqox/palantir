@@ -30,18 +30,16 @@ void main() {
 export class Trace extends Mesh<Tube, Program> {
 	private static program: Program;
 
-	private t: number = 0;
-
 	constructor(gl: OGLRenderingContext, { from = new Vec3(), to = new Vec3(), color = new Color() }: Partial<TraceOptions> = {}) {
-		const program =
-			Trace.program ??
-			(Trace.program = new Program(gl, {
-				fragment,
-				vertex,
-				uniforms: {
-					color: { value: color },
-				},
-			}));
+		const program = new Program(gl, {
+			fragment,
+			vertex,
+			uniforms: {
+				color: { value: color },
+			},
+		});
+
+		program.uniforms.color.value.set(color);
 
 		const mid = midpoint(from, to);
 		const c1 = midpoint(from, mid).scale(1.4);
@@ -68,8 +66,9 @@ export class Trace extends Mesh<Tube, Program> {
 			const update = (now: number) => {
 				const elapsed = now - start;
 				const progress = Math.min(elapsed / duration, 1);
-				this.t = Math.floor(total * progress);
-				this.geometry.setDrawRange(0, this.t);
+
+				const count = Math.max(1, Math.min(Math.floor(total * progress), total));
+				this.geometry.setDrawRange(0, count);
 
 				if (progress < 1) {
 					requestAnimationFrame(update);
@@ -89,8 +88,9 @@ export class Trace extends Mesh<Tube, Program> {
 			const update = (now: number) => {
 				const elapsed = now - start;
 				const progress = Math.min(elapsed / duration, 1);
-				const visible = Math.floor(total * (1 - progress));
-				this.geometry.setDrawRange(0, visible);
+
+				const visible = Math.max(0, Math.min(Math.floor(total * (1 - progress)), total));
+				if (visible > 0) this.geometry.setDrawRange(0, visible);
 
 				if (progress < 1) {
 					requestAnimationFrame(update);

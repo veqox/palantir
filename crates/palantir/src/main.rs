@@ -1,7 +1,7 @@
 #![feature(ip)]
 
-mod api;
 mod event;
+mod resolver;
 
 use std::{
     collections::{HashMap, hash_map::Entry},
@@ -42,8 +42,8 @@ use tracing::{trace, warn};
 use tracing_subscriber::EnvFilter;
 
 use crate::{
-    api::{IpInfo, IpInfoClient},
     event::{Event, Packet, Peer},
+    resolver::{IpInfo, Resolver},
 };
 
 #[derive(Clone)]
@@ -54,17 +54,22 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
-    let client = IpInfoClient::new();
-
     let server_peer = Peer {
         addr: env::var("SERVER_ADDR")
             .expect("SERVER_ADDR is not defined")
             .parse()
             .expect("SERVER_ADDR is not a valid IpAddr"),
-        info: client
-            .query_self()
-            .await
-            .expect("failed to get server location"),
+        info: IpInfo {
+            lat: env::var("SERVER_LAT")
+                .expect("SERVER_LAT is not defined")
+                .parse()
+                .expect("SERVER_LAT is not a valid f64"),
+            lon: env::var("SERVER_LON")
+                .expect("SERVER_LON is not defined")
+                .parse()
+                .expect("SERVER_LON is not a valid f64"),
+            source: resolver::Source::Manual,
+        },
         ingress_bytes: 0,
         egress_bytes: 0,
         last_message: None,
@@ -103,6 +108,12 @@ async fn main() {
     tokio::spawn({
         let tx = tx.clone();
         let state = state.clone();
+
+        let city_reader =
+            maxminddb::Reader::from_source(include_bytes!("../../../assets/GeoLite2-City.mmdb"))
+                .expect("failed to initialize reader");
+        let resolver = Resolver::new(city_reader);
+
         async move {
             let mut cache = HashMap::<IpAddr, IpInfo>::new();
             let mut ebpf = init_ebpf(&iface);
@@ -124,7 +135,7 @@ async fn main() {
 
                     let peer_info = match cache.entry(peer_addr) {
                         Entry::Occupied(entry) => entry.get().clone(),
-                        Entry::Vacant(entry) => match client.query(peer_addr).await {
+                        Entry::Vacant(entry) => match resolver.resolve(peer_addr) {
                             Some(info) => entry.insert(info).clone(),
                             None => {
                                 warn!("failed to get ip info for {}, skipping", peer_addr);
@@ -171,8 +182,8 @@ async fn main() {
 
                                 let bytes = raw_event.bytes as u64;
                                 match raw_event.direction {
-                                    Direction::Ingress => peer.ingress_bytes += bytes,
-                                    Direction::Egress => peer.egress_bytes += bytes,
+                                    Direction::Ingress => peer.egress_bytes += bytes,
+                                    Direction::Egress => peer.ingress_bytes += bytes,
                                 }
                             }
                             Entry::Vacant(_) => {}
