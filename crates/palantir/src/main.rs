@@ -185,6 +185,8 @@ async fn main() {
                                     Direction::Ingress => peer.egress_bytes += bytes,
                                     Direction::Egress => peer.ingress_bytes += bytes,
                                 }
+
+                                peer.last_message = Some(raw_event.timestamp(boot_time));
                             }
                             Entry::Vacant(_) => {}
                         }
