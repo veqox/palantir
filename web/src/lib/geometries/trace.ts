@@ -1,8 +1,8 @@
 import { midpoint } from "$lib/utils/geo";
 import { glsl } from "$lib/utils/glsl";
-import { Color, Mesh, Path, Program, Tube, Vec3, type OGLRenderingContext } from "ogl";
+import { Color, Mesh, Path, Polyline, Program, Tube, Vec3, type OGLRenderingContext } from "ogl";
 
-type TraceOptions = { from: Vec3; to: Vec3; color: Color };
+type TraceOptions = { from: Vec3; to: Vec3 };
 
 const fragment = glsl`#version 300 es
 precision highp float;
@@ -27,20 +27,8 @@ void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
-export class Trace extends Mesh<Tube, Program> {
-	private static program: Program;
-
-	constructor(gl: OGLRenderingContext, { from = new Vec3(), to = new Vec3(), color = new Color() }: Partial<TraceOptions> = {}) {
-		const program = new Program(gl, {
-			fragment,
-			vertex,
-			uniforms: {
-				color: { value: color },
-			},
-		});
-
-		program.uniforms.color.value.set(color);
-
+export class Trace extends Polyline {
+	constructor(gl: OGLRenderingContext, { from = new Vec3(), to = new Vec3() }: Partial<TraceOptions> = {}) {
 		const mid = midpoint(from, to);
 		const c1 = midpoint(from, mid).scale(1.4);
 		const c2 = midpoint(mid, to).scale(1.4);
@@ -49,17 +37,17 @@ export class Trace extends Mesh<Tube, Program> {
 		path.moveTo(from);
 		path.bezierCurveTo(c1, c2, to);
 
-		const geometry = new Tube(gl, {
-			radius: 0.005,
-			closed: false,
-			path,
+		super(gl, {
+			points: path.getPoints(256),
+			uniforms: {
+				uThickness: { value: 3 },
+				uColor: { value: new Color("#00D390") },
+			},
 		});
-
-		super(gl, { geometry, program });
 	}
 
 	fadeIn(duration = 500) {
-		const total = this.geometry.indices.length;
+		const total = this.geometry.drawRange.count;
 		const start = performance.now();
 
 		return new Promise<void>((resolve) => {
@@ -81,7 +69,7 @@ export class Trace extends Mesh<Tube, Program> {
 	}
 
 	fadeOut(duration = 500) {
-		const total = this.geometry.indices.length;
+		const total = this.geometry.drawRange.count;
 		const start = performance.now();
 
 		return new Promise<void>((resolve) => {
@@ -89,7 +77,7 @@ export class Trace extends Mesh<Tube, Program> {
 				const elapsed = now - start;
 				const progress = Math.min(elapsed / duration, 1);
 
-				const visible = Math.max(0, Math.min(Math.floor(total * (1 - progress)), total));
+				const visible = Math.min(Math.floor(total * (1 - progress)), total);
 				if (visible > 0) this.geometry.setDrawRange(0, visible);
 
 				if (progress < 1) {

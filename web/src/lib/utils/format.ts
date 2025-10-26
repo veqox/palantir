@@ -20,6 +20,13 @@ export function formatBytes(bytes: number, si = true, dp = 1): string {
 	return bytes.toFixed(dp) + " " + units[u];
 }
 
+export function formatFlag(countryCode: string): String {
+	return countryCode
+		.split("")
+		.map((char) => String.fromCodePoint(0x1f1e6 + char.charCodeAt(0) - "A".charCodeAt(0)))
+		.join("");
+}
+
 export const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", {
 	style: "narrow",
 	numeric: "auto",

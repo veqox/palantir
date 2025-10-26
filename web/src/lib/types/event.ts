@@ -6,11 +6,27 @@ export interface Peer {
 	last_message: Date;
 }
 
-export interface IpInfo {
-	lat: number;
-	lon: number;
-	source: string;
-}
+export type IpInfo =
+	| {
+			lat: number;
+			lon: number;
+			country_code: string;
+			source: "City";
+			city_name: string;
+			accuracy_radius: number;
+	  }
+	| {
+			lat: number;
+			lon: number;
+			country_code: string;
+			source: "Manual";
+	  }
+	| {
+			lat: number;
+			lon: number;
+			country_code: string;
+			source: "RegisteredCountry";
+	  };
 
 export interface Packet {
 	proto: string;

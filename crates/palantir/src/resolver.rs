@@ -6,12 +6,19 @@ use serde::Serialize;
 pub struct IpInfo {
     pub lat: f64,
     pub lon: f64,
-    pub source: Source,
+    pub country_code: String,
+
+    #[serde(flatten)]
+    pub details: LocationDetails,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub enum Source {
-    City,
+#[serde(tag = "source")]
+pub enum LocationDetails {
+    City {
+        city_name: String,
+        accuracy_radius: u16,
+    },
     Manual,
     RegisteredCountry,
 }
@@ -32,27 +39,55 @@ where
     }
 
     pub fn resolve(&self, addr: IpAddr) -> Option<IpInfo> {
-        if let Ok(Some(city)) = self.city_reader.lookup::<maxminddb::geoip2::City>(addr) {
-            if let Some(location) = city.location {
-                if let (Some(lat), Some(lon)) = (location.latitude, location.longitude) {
-                    return Some(IpInfo {
-                        lat,
-                        lon,
-                        source: Source::City,
-                    });
-                }
+        let city_data = self
+            .city_reader
+            .lookup::<maxminddb::geoip2::City>(addr)
+            .ok()??;
+
+        if let Some(location) = &city_data.location {
+            if let (Some(lat), Some(lon), Some(accuracy_radius)) = (
+                location.latitude,
+                location.longitude,
+                location.accuracy_radius,
+            ) {
+                let country_code = city_data
+                    .country
+                    .as_ref()
+                    .and_then(|c| c.iso_code)
+                    .map(|c| c.to_string())
+                    .unwrap_or_default();
+
+                let city_name = city_data
+                    .city
+                    .as_ref()
+                    .and_then(|c| c.names.as_ref())
+                    .and_then(|n| n.get("en"))
+                    .map(|s| s.to_string())
+                    .unwrap_or_default();
+
+                return Some(IpInfo {
+                    lat,
+                    lon,
+                    country_code: country_code.clone(),
+                    details: LocationDetails::City {
+                        city_name,
+                        accuracy_radius,
+                    },
+                });
             }
-            if let Some(registered_country) = city.registered_country {
-                if let Some(iso_code) = registered_country.iso_code {
-                    if let Ok(country) = my_country::Country::from_str(iso_code) {
-                        let geo = country.geo();
-                        if let (Some(lat), Some(lon)) = (geo.latitude, geo.longitude) {
-                            return Some(IpInfo {
-                                lat,
-                                lon,
-                                source: Source::RegisteredCountry,
-                            });
-                        }
+        }
+
+        if let Some(registered_country) = &city_data.registered_country {
+            if let Some(iso_code) = registered_country.iso_code {
+                if let Ok(country) = my_country::Country::from_str(iso_code) {
+                    let geo = country.geo();
+                    if let (Some(lat), Some(lon)) = (geo.latitude, geo.longitude) {
+                        return Some(IpInfo {
+                            lat,
+                            lon,
+                            country_code: iso_code.to_string(),
+                            details: LocationDetails::RegisteredCountry,
+                        });
                     }
                 }
             }

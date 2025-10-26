@@ -68,7 +68,9 @@ async fn main() {
                 .expect("SERVER_LON is not defined")
                 .parse()
                 .expect("SERVER_LON is not a valid f64"),
-            source: resolver::Source::Manual,
+            country_code: env::var("SERVER_COUNTRY_CODE")
+                .expect("SERVER_COUNTRY_CODE is not defined"),
+            details: resolver::LocationDetails::Manual,
         },
         ingress_bytes: 0,
         egress_bytes: 0,
