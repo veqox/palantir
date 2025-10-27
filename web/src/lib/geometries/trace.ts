@@ -1,31 +1,7 @@
 import { midpoint } from "$lib/utils/geo";
-import { glsl } from "$lib/utils/glsl";
-import { Color, Mesh, Path, Polyline, Program, Tube, Vec3, type OGLRenderingContext } from "ogl";
+import { Color, Path, Polyline, Vec3, type OGLRenderingContext } from "ogl";
 
 type TraceOptions = { from: Vec3; to: Vec3 };
-
-const fragment = glsl`#version 300 es
-precision highp float;
-
-uniform vec3 color;
-
-out vec4 fragColor;
-
-void main() {
-    fragColor = vec4(color, 1);
-}`;
-
-const vertex = glsl`#version 300 es
-precision highp float;
-
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-
-in vec3 position;
-
-void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
 
 export class Trace extends Polyline {
 	constructor(gl: OGLRenderingContext, { from = new Vec3(), to = new Vec3() }: Partial<TraceOptions> = {}) {

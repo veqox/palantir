@@ -1,4 +1,4 @@
-import { Path, Tube, Mesh, type OGLRenderingContext, Program, Vec3, Color, Transform, Sphere, Raycast } from "ogl";
+import { Path, Tube, Mesh, type OGLRenderingContext, Program, Vec3, Color, Transform, Sphere } from "ogl";
 import { glsl } from "$lib/utils/glsl";
 
 type BeaconOptions = {

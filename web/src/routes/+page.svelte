@@ -2,23 +2,21 @@
     import { Globe } from "$lib/geometries/globe";
     import { Trace } from "$lib/geometries/trace";
     import type { Event, Peer } from "$lib/types/event";
-    import { formatBytes, formatFlag, relativeTimeFormatter } from "$lib/utils/format";
+    import { formatBytes, formatFlag } from "$lib/utils/format";
     import { toCartesian } from "$lib/utils/geo";
-    import { Camera, Orbit, Renderer, Transform, Vec3, type OGLRenderingContext } from "ogl";
+    import { Camera, Orbit, Quat, Renderer, Transform, Vec3, type OGLRenderingContext } from "ogl";
     import { onMount } from "svelte";
 
     let canvas: HTMLCanvasElement;
 
     let peers: Peer[] = $state([]);
 
-    let camera: Camera;
     let orbit: Orbit;
-    let scene: Transform;
-    let gl: OGLRenderingContext;
+    let camera: Camera;
 
     onMount(() => {
         const renderer = new Renderer({ dpr: 2, webgl: 2, canvas });
-        gl = renderer.gl;
+        const gl = renderer.gl;
         camera = new Camera(gl, { fov: 40 });
         camera.position.set(0, 0, 4);
         orbit = new Orbit(camera, { target: new Vec3() });
@@ -30,7 +28,7 @@
         window.addEventListener("resize", resize, false);
         resize();
 
-        scene = new Transform();
+        const scene = new Transform();
 
         const globe = new Globe(gl);
         globe.setParent(scene);
@@ -78,7 +76,7 @@
             }
         };
 
-        async function update(now: number) {
+        async function update(_now: number) {
             renderer.render({ scene, camera });
             orbit.update();
             requestAnimationFrame(update);
@@ -117,7 +115,36 @@
 
                             return b.ingress_bytes + b.egress_bytes - (a.ingress_bytes + a.egress_bytes);
                         }) as peer}
-                            <tr class="hover:bg-base-300 cursor-pointer">
+                            <tr
+                                class="hover:bg-base-300 cursor-pointer"
+                                onclick={() => {
+                                    const source = camera.position.clone().normalize();
+                                    const target = toCartesian({ lat: peer.info.lat, lon: peer.info.lon }).normalize();
+
+                                    const radius = camera.position.len();
+                                    const axis = new Vec3().cross(source, target).normalize();
+                                    const angle = Math.acos(source.dot(target));
+
+                                    const start = performance.now();
+                                    const duration = 1000;
+
+                                    function update(now: number) {
+                                        const elapsed = now - start;
+                                        const progress = Math.min(elapsed / duration, 1);
+                                        const eased = progress * (2 - progress);
+
+                                        const q = new Quat().fromAxisAngle(axis, angle * eased);
+                                        const current = source.clone().applyQuaternion(q).scale(radius);
+
+                                        camera.position.copy(current);
+                                        orbit.forcePosition();
+
+                                        if (progress < 1) requestAnimationFrame(update);
+                                    }
+
+                                    requestAnimationFrame(update);
+                                }}
+                            >
                                 <td>
                                     <p>{peer.addr}</p>
                                 </td>
