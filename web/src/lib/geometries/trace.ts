@@ -16,7 +16,7 @@ export class Trace extends Polyline {
 		super(gl, {
 			points: path.getPoints(256),
 			uniforms: {
-				uThickness: { value: 3 },
+				uThickness: { value: 1 },
 				uColor: { value: new Color("#00D390") },
 			},
 		});

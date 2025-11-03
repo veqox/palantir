@@ -4,7 +4,7 @@
     import type { Event, Peer } from "$lib/types/event";
     import { formatBytes, formatFlag } from "$lib/utils/format";
     import { toCartesian } from "$lib/utils/geo";
-    import { Camera, Orbit, Quat, Renderer, Transform, Vec3, type OGLRenderingContext } from "ogl";
+    import { Camera, Orbit, Quat, Renderer, Transform, Vec3 } from "ogl";
     import { onMount } from "svelte";
 
     let canvas: HTMLCanvasElement;
@@ -17,6 +17,7 @@
     onMount(() => {
         const renderer = new Renderer({ dpr: 2, webgl: 2, canvas });
         const gl = renderer.gl;
+        gl.clearColor(1, 1, 1, 1);
         camera = new Camera(gl, { fov: 40 });
         camera.position.set(0, 0, 4);
         orbit = new Orbit(camera, { target: new Vec3() });

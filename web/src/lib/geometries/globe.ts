@@ -1,7 +1,7 @@
-import land from "$lib/assets/land.json";
-import { toCartesian } from "$lib/utils/geo";
+import land from "$lib/assets/countries.json";
 import { glsl } from "$lib/utils/glsl";
-import { Mesh, type OGLRenderingContext, Program, Color, Sphere, Transform, Polyline } from "ogl";
+import { Mesh, type OGLRenderingContext, Program, Color, Sphere, Transform } from "ogl";
+import { Country } from "./country";
 
 const fragment = glsl`#version 300 es
 precision highp float;
@@ -56,15 +56,17 @@ export class Globe extends Transform {
 		this.addChild(sphere);
 
 		for (const polygon of land.geometries) {
-			for (const coordinates of polygon.coordinates) {
-				const points = coordinates.map(([lon, lat]) => toCartesian({ lon, lat }).scale(1.0001));
+			const polygons =
+				polygon.type === "MultiPolygon" ? (polygon.coordinates as number[][][][]) : [polygon.coordinates as unknown as number[][][]];
 
-				const geometry = new Polyline(gl, {
-					points,
-				});
+			const mesh = new Country(gl, polygons);
+			this.addChild(mesh);
 
-				this.addChild(geometry.mesh);
-			}
+			// const geometry = new Polyline(gl, {
+			// 	points: ring.map(([lon, lat]) => toCartesian({ lon, lat })),
+			// 	uniforms: { uThickness: { value: 3 } },
+			// });
+			// this.addChild(geometry.mesh);
 		}
 	}
 }
