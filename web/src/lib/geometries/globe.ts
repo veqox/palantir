@@ -1,20 +1,23 @@
 import land from "$lib/assets/countries.json";
 import { toLatLon } from "$lib/utils/geo";
 import { glsl } from "$lib/utils/glsl";
-import { Mesh, type OGLRenderingContext, Program, Color, Sphere, Transform, Geometry, Vec3 } from "ogl";
+import { Mesh, type OGLRenderingContext, Program, Geometry, Vec3, Color } from "ogl";
 
 const vertex = glsl`#version 300 es
 in vec3 position;
 in vec3 normal;
+in vec3 color;
 in float extrusion;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
 out vec4 vMVPos;
+out vec3 vColor;
 
 void main() {
 	vMVPos = modelViewMatrix * vec4(position * extrusion, 1.0);
+	vColor = color;
 	gl_Position = projectionMatrix * vMVPos;
 }`;
 
@@ -22,6 +25,7 @@ const fragment = glsl`#version 300 es
 precision highp float;
 
 in vec4 vMVPos;
+in vec3 vColor;
 
 out vec4 fragColor;
 
@@ -33,7 +37,7 @@ vec3 normals(vec3 pos) {
 
 void main() {
 	vec3 normal = normals(vMVPos.xyz);
-    fragColor = vec4(normal, 1.0);
+    fragColor = vec4(vColor + (normal * 0.3), 1.0);
 }`;
 
 export class Globe extends Mesh<Geometry, Program> {
@@ -169,6 +173,7 @@ export class Globe extends Mesh<Geometry, Program> {
 		};
 
 		const normals: Array<Vec3> = new Array(vertices.length);
+		const colors: Array<Color> = new Array(vertices.length).fill(new Color("#2D68C4"));
 
 		outer: for (const face of faces) {
 			const centroid = new Vec3();
@@ -184,7 +189,10 @@ export class Globe extends Mesh<Geometry, Program> {
 					const inside = isLand({ lon, lat }, rings);
 
 					if (inside) {
-						for (const i of face) extrusions[i] = 1.05;
+						for (const i of face) {
+							extrusions[i] = 1.05;
+							colors[i] = new Color("#008000");
+						}
 						continue outer;
 					}
 				}
@@ -194,6 +202,7 @@ export class Globe extends Mesh<Geometry, Program> {
 		const geometry = new Geometry(gl, {
 			position: { size: 3, data: new Float32Array(vertices.flat()) },
 			index: { data: new Uint32Array(faces.flat()) },
+			color: { size: 3, data: new Float32Array(colors.flat()) },
 			extrusion: { data: new Float32Array(extrusions.flat()) },
 		});
 
