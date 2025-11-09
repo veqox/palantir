@@ -40,6 +40,13 @@ impl RawEvent {
         }
     }
 
+    pub fn local_addr(&self) -> IpAddr {
+        match self.direction {
+            Direction::Ingress => self.dst_addr,
+            Direction::Egress => self.src_addr,
+        }
+    }
+
     #[cfg(feature = "std")]
     pub fn timestamp(&self, boot_time: SystemTime) -> SystemTime {
         use core::time::Duration;

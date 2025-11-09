@@ -128,6 +128,7 @@ async fn main() {
                 while let Some(item) = events.next() {
                     let raw_event = unsafe { *(item.as_ptr() as *const RawEvent) };
                     let peer_addr = raw_event.peer_addr();
+                    let local_addr = raw_event.local_addr();
 
                     if peer_addr.is_multicast() || !peer_addr.is_global() {
                         continue;
@@ -164,8 +165,8 @@ async fn main() {
 
                         let bytes = raw_event.bytes as u64;
                         match raw_event.direction {
-                            Direction::Ingress => peer.ingress_bytes += bytes,
-                            Direction::Egress => peer.egress_bytes += bytes,
+                            Direction::Ingress => peer.egress_bytes += bytes,
+                            Direction::Egress => peer.ingress_bytes += bytes,
                         }
 
                         peer.last_message = Some(raw_event.timestamp(boot_time));
@@ -178,14 +179,14 @@ async fn main() {
                     {
                         let mut peers = state.peers.lock().await;
 
-                        match peers.entry(raw_event.src_addr) {
+                        match peers.entry(local_addr) {
                             Entry::Occupied(mut entry) => {
                                 let peer = entry.get_mut();
 
                                 let bytes = raw_event.bytes as u64;
                                 match raw_event.direction {
-                                    Direction::Ingress => peer.egress_bytes += bytes,
-                                    Direction::Egress => peer.ingress_bytes += bytes,
+                                    Direction::Ingress => peer.ingress_bytes += bytes,
+                                    Direction::Egress => peer.egress_bytes += bytes,
                                 }
 
                                 peer.last_message = Some(raw_event.timestamp(boot_time));

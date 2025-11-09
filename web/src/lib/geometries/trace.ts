@@ -16,14 +16,23 @@ export class Trace extends Polyline {
 		super(gl, {
 			points: path.getPoints(256),
 			uniforms: {
-				uThickness: { value: 1 },
-				uColor: { value: new Color("#00D390") },
+				uThickness: { value: 5 },
+				uColor: { value: new Color("#DE3163") },
 			},
 		});
 	}
 
+	private get segmentCount() {
+		const indicesPerSegment = 6;
+		return Math.floor((this.geometry.attributes.index?.count ?? 0) / indicesPerSegment);
+	}
+
+	private get indicesPerSegment() {
+		return 6;
+	}
+
 	fadeIn(duration = 500) {
-		const total = this.geometry.drawRange.count;
+		const totalSegments = this.segmentCount;
 		const start = performance.now();
 
 		return new Promise<void>((resolve) => {
@@ -31,7 +40,11 @@ export class Trace extends Polyline {
 				const elapsed = now - start;
 				const progress = Math.min(elapsed / duration, 1);
 
-				const count = Math.max(1, Math.min(Math.floor(total * progress), total));
+				const count = Math.max(
+					this.indicesPerSegment,
+					Math.min(Math.floor(totalSegments * progress) * this.indicesPerSegment, this.geometry.attributes.index!.count!),
+				);
+
 				this.geometry.setDrawRange(0, count);
 
 				if (progress < 1) {
@@ -45,7 +58,7 @@ export class Trace extends Polyline {
 	}
 
 	fadeOut(duration = 500) {
-		const total = this.geometry.drawRange.count;
+		const totalSegments = this.segmentCount;
 		const start = performance.now();
 
 		return new Promise<void>((resolve) => {
@@ -53,8 +66,12 @@ export class Trace extends Polyline {
 				const elapsed = now - start;
 				const progress = Math.min(elapsed / duration, 1);
 
-				const visible = Math.min(Math.floor(total * (1 - progress)), total);
-				if (visible > 0) this.geometry.setDrawRange(0, visible);
+				const count = Math.max(
+					this.indicesPerSegment,
+					Math.min(Math.floor(totalSegments * (1 - progress)) * this.indicesPerSegment, this.geometry.attributes.index!.count!!),
+				);
+
+				this.geometry.setDrawRange(0, count);
 
 				if (progress < 1) {
 					requestAnimationFrame(update);

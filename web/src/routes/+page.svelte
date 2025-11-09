@@ -59,8 +59,8 @@
                     return;
                 }
 
-                src_peer.ingress_bytes += bytes;
-                dst_peer.egress_bytes += bytes;
+                src_peer.egress_bytes += bytes;
+                dst_peer.ingress_bytes += bytes;
 
                 src_peer.last_message = timestamp;
                 dst_peer.last_message = timestamp;
