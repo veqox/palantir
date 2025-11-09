@@ -1,4 +1,4 @@
-import land from "$lib/assets/countries.json";
+import geoData from "$lib/assets/countries.json";
 import { toLatLon } from "$lib/utils/geo";
 import { glsl } from "$lib/utils/glsl";
 import { Mesh, type OGLRenderingContext, Program, Geometry, Vec3, Color } from "ogl";
@@ -119,47 +119,65 @@ export class Globe extends Mesh<Geometry, Program> {
 
 		const extrusions: Array<number> = new Array(vertices.length).fill(1);
 
-		const bounds = (ring: number[][]) => {
+		const bounds = (coordinates: number[][][][]) => {
 			let minLat = Infinity,
 				maxLat = -Infinity,
 				minLon = Infinity,
 				maxLon = -Infinity;
 
-			for (const [lon, lat] of ring) {
-				if (lon < minLon) minLon = lon;
-				if (lon > maxLon) maxLon = lon;
-				if (lat < minLat) minLat = lat;
-				if (lat > maxLat) maxLat = lat;
+			for (const polygons of coordinates) {
+				for (const ring of polygons) {
+					for (const [lon, lat] of ring) {
+						if (lon < minLon) minLon = lon;
+						if (lon > maxLon) maxLon = lon;
+						if (lat < minLat) minLat = lat;
+						if (lat > maxLat) maxLat = lat;
+					}
+				}
 			}
+
 			return { minLat, maxLat, minLon, maxLon };
 		};
 
-		const polygons = land.geometries
-			.map((geometry) =>
-				geometry.type === "MultiPolygon" ? (geometry.coordinates as number[][][][]) : [geometry.coordinates as unknown as number[][][]],
-			)
-			.map((coordinates) => coordinates.map((rings) => rings.map((ring) => ({ bounds: bounds(ring), ring }))));
+		type Country = {
+			properties: {
+				name: string;
+				iso_code: string;
+			};
+			bounds: {
+				minLat: number;
+				maxLat: number;
+				minLon: number;
+				maxLon: number;
+			};
+			geometry: {
+				coordinates: number[][][][];
+			};
+		};
 
-		const isLand = (
-			{ lon, lat }: { lon: number; lat: number },
-			polygons: {
-				bounds: {
-					minLat: number;
-					maxLat: number;
-					minLon: number;
-					maxLon: number;
-				};
-				ring: number[][];
-			}[],
-		) => {
-			for (const { ring, bounds } of polygons) {
-				if (lon < bounds.minLon || lon > bounds.maxLon || lat < bounds.minLat || lat > bounds.maxLat) continue;
-				if (pointInPolygon({ lon, lat }, ring)) return true;
+		const countries = geoData.features.map((f) => {
+			const coordinates = (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates : [f.geometry.coordinates]) as number[][][][];
+
+			return {
+				properties: { name: f.properties.NAME, iso_code: f.properties.ISO_A2 },
+				bounds: bounds(coordinates),
+				geometry: {
+					coordinates,
+				},
+			};
+		});
+
+		const isLand = ({ lon, lat }: { lon: number; lat: number }, { bounds, geometry }: Country) => {
+			if (lon < bounds.minLon || lon > bounds.maxLon || lat < bounds.minLat || lat > bounds.maxLat) return false;
+			for (const rings of geometry.coordinates) {
+				for (const ring of rings) {
+					if (isPointInPolygon({ lon, lat }, ring)) return true;
+				}
 			}
 			return false;
 		};
 
-		const pointInPolygon = ({ lon, lat }: { lon: number; lat: number }, ring: number[][]) => {
+		const isPointInPolygon = ({ lon, lat }: { lon: number; lat: number }, ring: number[][]) => {
 			let inside = false;
 			for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
 				const [cLon, cLat] = ring[i];
@@ -175,7 +193,7 @@ export class Globe extends Mesh<Geometry, Program> {
 		const normals: Array<Vec3> = new Array(vertices.length);
 		const colors: Array<Color> = new Array(vertices.length).fill(new Color("#2D68C4"));
 
-		outer: for (const face of faces) {
+		for (const face of faces) {
 			const centroid = new Vec3();
 			face.forEach((i) => centroid.add(vertices[i]));
 			centroid.scale(1 / 3).normalize();
@@ -184,17 +202,13 @@ export class Globe extends Mesh<Geometry, Program> {
 
 			const { lat, lon } = toLatLon(centroid);
 
-			for (const polygon of polygons) {
-				for (const rings of polygon) {
-					const inside = isLand({ lon, lat }, rings);
-
-					if (inside) {
-						for (const i of face) {
-							extrusions[i] = 1.05;
-							colors[i] = new Color("#008000");
-						}
-						continue outer;
+			for (const country of countries) {
+				if (isLand({ lon, lat }, country)) {
+					for (const i of face) {
+						extrusions[i] = 1.05;
+						colors[i] = new Color("#008000");
 					}
+					break;
 				}
 			}
 		}
