@@ -4,14 +4,18 @@
     import type { Event, Peer } from "$lib/types/event";
     import { formatBytes, formatFlag } from "$lib/utils/format";
     import { toCartesian } from "$lib/utils/geo";
-    import { Camera, Orbit, Quat, Renderer, Transform, Vec3 } from "ogl";
+    import { Camera, Geometry, Orbit, Quat, Renderer, Transform, Vec3 } from "ogl";
     import { onMount } from "svelte";
 
     let canvas: HTMLCanvasElement;
 
     let peers: Peer[] = $state([]);
+    let selectedPeer: Peer | undefined = $state(undefined);
+
+    let cache: Map<string, Trace> = new Map();
 
     let orbit: Orbit;
+    let globe: Globe;
     let camera: Camera;
 
     onMount(() => {
@@ -31,12 +35,12 @@
 
         const scene = new Transform();
 
-        const globe = new Globe(gl);
+        globe = new Globe(gl);
         globe.setParent(scene);
 
         const source = new EventSource("http://localhost:3000/events");
 
-        source.onmessage = async (e) => {
+        source.onmessage = (e) => {
             const data = JSON.parse(e.data, (_, value) => {
                 if (value && typeof value == "object" && "secs_since_epoch" in value && "nanos_since_epoch" in value) {
                     return new Date(value.secs_since_epoch * 1000 + value.nanos_since_epoch / 1_000_000);
@@ -68,12 +72,12 @@
                 const from = toCartesian({ lat: src_peer.info.lat, lon: src_peer.info.lon });
                 const to = toCartesian({ lat: dst_peer.info.lat, lon: dst_peer.info.lon });
 
-                const trace = new Trace(gl, { from, to });
+                const trace = cache.get(dst_addr) ?? new Trace(gl, { from, to });
+
                 scene.addChild(trace.mesh);
 
-                await trace.fadeIn(200);
-                await trace.fadeOut(200);
-                scene.removeChild(trace.mesh);
+                trace.fadeIn(200).then(() => trace.fadeOut(200).then(() => scene.removeChild(trace.mesh)));
+                cache.set(dst_addr, trace);
             }
         };
 
@@ -119,6 +123,13 @@
                             <tr
                                 class="hover:bg-base-300 cursor-pointer"
                                 onclick={() => {
+                                    if (selectedPeer) {
+                                        globe.unselect(selectedPeer.info.country_code);
+                                    }
+                                    selectedPeer = peer;
+
+                                    globe.select(peer.info.country_code);
+
                                     const source = camera.position.clone().normalize();
                                     const target = toCartesian({ lat: peer.info.lat, lon: peer.info.lon }).normalize();
 

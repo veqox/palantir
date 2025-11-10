@@ -41,6 +41,8 @@ void main() {
 }`;
 
 export class Globe extends Mesh<Geometry, Program> {
+	private countryFaces: Map<string, number[][]>;
+
 	constructor(gl: OGLRenderingContext) {
 		const program = new Program(gl, {
 			fragment,
@@ -87,7 +89,7 @@ export class Globe extends Mesh<Geometry, Program> {
 			[9, 8, 1],
 		];
 
-		for (let i = 0; i < 6; i++) {
+		for (let i = 0; i < 7; i++) {
 			const cache: Map<string, number> = new Map();
 
 			const subdivided = [];
@@ -116,8 +118,6 @@ export class Globe extends Mesh<Geometry, Program> {
 
 			faces = subdivided;
 		}
-
-		const extrusions: Array<number> = new Array(vertices.length).fill(1);
 
 		const bounds = (coordinates: number[][][][]) => {
 			let minLat = Infinity,
@@ -191,19 +191,25 @@ export class Globe extends Mesh<Geometry, Program> {
 		};
 
 		const normals: Array<Vec3> = new Array(vertices.length);
+		const extrusions: Array<number> = new Array(vertices.length).fill(1);
 		const colors: Array<Color> = new Array(vertices.length).fill(new Color("#2D68C4"));
+		const countryFaces: Map<string, number[][]> = new Map();
 
 		for (const face of faces) {
 			const centroid = new Vec3();
 			face.forEach((i) => centroid.add(vertices[i]));
 			centroid.scale(1 / 3).normalize();
 
-			normals.push(centroid, centroid, centroid);
+			for (const i of face) {
+				normals[i] = centroid;
+			}
 
 			const { lat, lon } = toLatLon(centroid);
 
 			for (const country of countries) {
 				if (isLand({ lon, lat }, country)) {
+					countryFaces.set(country.properties.iso_code, [...(countryFaces.get(country.properties.iso_code) ?? []), face]);
+
 					for (const i of face) {
 						extrusions[i] = 1.05;
 						colors[i] = new Color("#008000");
@@ -221,5 +227,79 @@ export class Globe extends Mesh<Geometry, Program> {
 		});
 
 		super(gl, { program, geometry });
+
+		this.countryFaces = countryFaces;
+	}
+
+	select(iso_code: string, duration: number = 500, extrusion: number = 0.01) {
+		const faces = this.countryFaces.get(iso_code);
+		if (!faces) return;
+
+		const start = performance.now();
+
+		return new Promise<void>((resolve) => {
+			const update = (now: number) => {
+				const elapsed = now - start;
+				const progress = Math.min(elapsed / duration, 1);
+
+				const count = progress * extrusion;
+
+				for (const face of faces) {
+					for (const i of face) {
+						this.geometry.attributes.extrusion.data![i] = 1.05 + count;
+						const color = new Color("#880000");
+						this.geometry.attributes.color.data![i * 3] = color[0];
+						this.geometry.attributes.color.data![i * 3 + 1] = color[1];
+						this.geometry.attributes.color.data![i * 3 + 2] = color[2];
+					}
+				}
+
+				this.geometry.attributes.extrusion.needsUpdate = true;
+				this.geometry.attributes.color.needsUpdate = true;
+
+				if (progress < 1) {
+					requestAnimationFrame(update);
+				} else {
+					resolve();
+				}
+			};
+			requestAnimationFrame(update);
+		});
+	}
+
+	unselect(iso_code: string, duration: number = 500, extrusion: number = 0.01) {
+		const faces = this.countryFaces.get(iso_code);
+		if (!faces) return;
+
+		const start = performance.now();
+
+		return new Promise<void>((resolve) => {
+			const update = (now: number) => {
+				const elapsed = now - start;
+				const progress = Math.min(elapsed / duration, 1);
+
+				const count = progress * extrusion;
+
+				for (const face of faces) {
+					for (const i of face) {
+						this.geometry.attributes.extrusion.data![i] = 1.06 - count;
+						const color = new Color("#008000");
+						this.geometry.attributes.color.data![i * 3] = color[0];
+						this.geometry.attributes.color.data![i * 3 + 1] = color[1];
+						this.geometry.attributes.color.data![i * 3 + 2] = color[2];
+					}
+				}
+
+				this.geometry.attributes.extrusion.needsUpdate = true;
+				this.geometry.attributes.color.needsUpdate = true;
+
+				if (progress < 1) {
+					requestAnimationFrame(update);
+				} else {
+					resolve();
+				}
+			};
+			requestAnimationFrame(update);
+		});
 	}
 }
