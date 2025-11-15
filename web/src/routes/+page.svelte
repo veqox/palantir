@@ -1,10 +1,10 @@
 <script lang="ts">
     import { Globe } from "$lib/geometries/globe";
     import { Trace } from "$lib/geometries/trace";
-    import type { Event, Peer } from "$lib/types/event";
+    import { Packet, Peer, type Event } from "$lib/types/event";
     import { formatBytes, formatFlag } from "$lib/utils/format";
     import { toCartesian } from "$lib/utils/geo";
-    import { Camera, Geometry, Orbit, Quat, Renderer, Transform, Vec3 } from "ogl";
+    import { Camera, Color, Geometry, Orbit, Quat, Renderer, Transform, Vec3 } from "ogl";
     import { onMount } from "svelte";
 
     let canvas: HTMLCanvasElement;
@@ -12,7 +12,7 @@
     let peers: Peer[] = $state([]);
     let selectedPeer: Peer | undefined = $state(undefined);
 
-    let cache: Map<string, Trace> = new Map();
+    let traces: Map<string, { trace: Trace; finished: boolean }> = new Map();
 
     let orbit: Orbit;
     let globe: Globe;
@@ -21,10 +21,11 @@
     onMount(() => {
         const renderer = new Renderer({ dpr: 2, webgl: 2, canvas });
         const gl = renderer.gl;
-        gl.clearColor(1, 1, 1, 1);
+        const { r, g, b } = new Color("#1D232A");
+        gl.clearColor(r, g, b, 1);
         camera = new Camera(gl, { fov: 40 });
         camera.position.set(0, 0, 4);
-        orbit = new Orbit(camera, { target: new Vec3() });
+        orbit = new Orbit(camera, { target: new Vec3(), minDistance: 2 });
 
         function resize() {
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -41,20 +42,15 @@
         const source = new EventSource("http://localhost:3000/events");
 
         source.onmessage = (e) => {
-            const data = JSON.parse(e.data, (_, value) => {
-                if (value && typeof value == "object" && "secs_since_epoch" in value && "nanos_since_epoch" in value) {
-                    return new Date(value.secs_since_epoch * 1000 + value.nanos_since_epoch / 1_000_000);
-                }
-                return value;
-            }) as Event;
+            const data = JSON.parse(e.data) as Event;
 
             if (data.peer) {
                 const { peer } = data;
-                peers.push(peer);
+                peers.push(Peer.fromJSON(peer));
             }
 
             if (data.packet) {
-                const { src_addr, dst_addr, bytes, timestamp } = data.packet;
+                const { src_addr, dst_addr, bytes, timestamp } = Packet.fromJSON(data.packet);
 
                 const src_peer = peers.find((p) => p.addr === src_addr);
                 const dst_peer = peers.find((p) => p.addr === dst_addr);
@@ -67,17 +63,21 @@
                 dst_peer.ingress_bytes += bytes;
 
                 src_peer.last_message = timestamp;
-                dst_peer.last_message = timestamp;
 
-                const from = toCartesian({ lat: src_peer.info.lat, lon: src_peer.info.lon });
-                const to = toCartesian({ lat: dst_peer.info.lat, lon: dst_peer.info.lon });
+                const from = toCartesian({ lat: src_peer.info.lat, lon: src_peer.info.lon }).multiply(1.05);
+                const to = toCartesian({ lat: dst_peer.info.lat, lon: dst_peer.info.lon }).multiply(1.05);
 
-                const trace = cache.get(dst_addr) ?? new Trace(gl, { from, to });
+                const { trace, finished } = traces.get(dst_addr) ?? { trace: new Trace(gl, { from, to }), finished: true };
+                if (!finished) return;
 
+                traces.set(dst_addr, { trace, finished: false });
                 scene.addChild(trace.mesh);
-
-                trace.fadeIn(200).then(() => trace.fadeOut(200).then(() => scene.removeChild(trace.mesh)));
-                cache.set(dst_addr, trace);
+                trace.fadeIn(200).then(() =>
+                    trace.fadeOut(200).then(() => {
+                        traces.set(dst_addr, { trace: trace, finished: true });
+                        scene.removeChild(trace.mesh);
+                    }),
+                );
             }
         };
 
@@ -88,10 +88,6 @@
         }
         requestAnimationFrame(update);
     });
-
-    function isActive(peer: Peer): boolean {
-        return Date.now() - peer.last_message.getTime() < 1000 * 60;
-    }
 </script>
 
 <div class="drawer drawer-open">
@@ -104,8 +100,12 @@
     <div class="drawer-side">
         <label for="peer-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
 
-        <aside class="flex flex-row bg-base-100/80 backdrop-blur-md max-h-screen w-full">
-            <div class="is-drawer-close:w-0 overflow-x-scroll" onwheel={(e) => e.stopPropagation()} ontouchmove={(e) => e.stopPropagation()}>
+        <aside class="flex flex-row backdrop-blur-md max-h-screen w-full">
+            <div
+                class="is-drawer-close:w-0 overflow-x-scroll bg-base-200/80"
+                onwheel={(e) => e.stopPropagation()}
+                ontouchmove={(e) => e.stopPropagation()}
+            >
                 <div class="p-4 w-full flex flex-col gap-4">
                     <h2 class="text-xl font-bold">Peers</h2>
                 </div>
@@ -113,22 +113,31 @@
                 <table class="table">
                     <tbody>
                         {#each peers.toSorted((a, b) => {
-                            const activeA = isActive(a) ? 1 : 0;
-                            const activeB = isActive(b) ? 1 : 0;
+                            const activeA = a.active ? 1 : 0;
+                            const activeB = b.active ? 1 : 0;
 
                             if (activeA !== activeB) return activeB - activeA;
 
                             return b.ingress_bytes + b.egress_bytes - (a.ingress_bytes + a.egress_bytes);
                         }) as peer}
                             <tr
-                                class="hover:bg-base-300 cursor-pointer"
+                                class="hover:bg-base-300/80 {selectedPeer?.addr === peer.addr ? 'bg-base-300/80' : ''} cursor-pointer"
                                 onclick={() => {
                                     if (selectedPeer) {
-                                        globe.unselect(selectedPeer.info.country_code);
+                                        if (selectedPeer.info.source === "RegisteredCountry") {
+                                            globe.unselectCountry(selectedPeer.info.country_code);
+                                        } else if (peer.info.source === "City" || peer.info.source === "Manual") {
+                                            globe.unselectRegion(selectedPeer.info);
+                                        }
                                     }
-                                    selectedPeer = peer;
 
-                                    globe.select(peer.info.country_code);
+                                    if (peer.info.source === "RegisteredCountry") {
+                                        globe.selectCountry(peer.info.country_code);
+                                    } else if (peer.info.source === "City" || peer.info.source === "Manual") {
+                                        globe.selectRegion(peer.info);
+                                    }
+
+                                    selectedPeer = peer;
 
                                     const source = camera.position.clone().normalize();
                                     const target = toCartesian({ lat: peer.info.lat, lon: peer.info.lon }).normalize();
@@ -206,7 +215,7 @@
                                     {formatFlag(peer.info.country_code)}
                                 </td>
                                 <td>
-                                    {#if isActive(peer)}
+                                    {#if peer.active}
                                         <div aria-label="success" class="status status-success animate-pulse"></div>
                                     {:else}
                                         <div aria-label="error" class="status status-error"></div>
@@ -218,7 +227,10 @@
                 </table>
             </div>
 
-            <label for="peer-drawer" class="btn btn-ghost drawer-button is-drawer-open:rotate-y-180 flex-grow h-screen">
+            <label
+                for="peer-drawer"
+                class="cursor-pointer inline-flex justify-center items-center bg-base-200/80 hover:bg-base-300/80 px-4 drawer-button is-drawer-open:rotate-y-180 flex-grow h-screen"
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"

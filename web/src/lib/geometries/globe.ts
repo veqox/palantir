@@ -1,11 +1,10 @@
 import geoData from "$lib/assets/countries.json";
-import { toLatLon } from "$lib/utils/geo";
+import { toCartesian, toLatLon } from "$lib/utils/geo";
 import { glsl } from "$lib/utils/glsl";
 import { Mesh, type OGLRenderingContext, Program, Geometry, Vec3, Color } from "ogl";
 
 const vertex = glsl`#version 300 es
 in vec3 position;
-in vec3 normal;
 in vec3 color;
 in float extrusion;
 
@@ -26,7 +25,6 @@ precision highp float;
 
 in vec4 vMVPos;
 in vec3 vColor;
-
 out vec4 fragColor;
 
 vec3 normals(vec3 pos) {
@@ -42,6 +40,8 @@ void main() {
 
 export class Globe extends Mesh<Geometry, Program> {
 	private countryFaces: Map<string, number[][]>;
+	private faces: number[][];
+	private vertices: Vec3[];
 
 	constructor(gl: OGLRenderingContext) {
 		const program = new Program(gl, {
@@ -190,7 +190,6 @@ export class Globe extends Mesh<Geometry, Program> {
 			return inside;
 		};
 
-		const normals: Array<Vec3> = new Array(vertices.length);
 		const extrusions: Array<number> = new Array(vertices.length).fill(1);
 		const colors: Array<Color> = new Array(vertices.length).fill(new Color("#2D68C4"));
 		const countryFaces: Map<string, number[][]> = new Map();
@@ -199,10 +198,6 @@ export class Globe extends Mesh<Geometry, Program> {
 			const centroid = new Vec3();
 			face.forEach((i) => centroid.add(vertices[i]));
 			centroid.scale(1 / 3).normalize();
-
-			for (const i of face) {
-				normals[i] = centroid;
-			}
 
 			const { lat, lon } = toLatLon(centroid);
 
@@ -229,9 +224,11 @@ export class Globe extends Mesh<Geometry, Program> {
 		super(gl, { program, geometry });
 
 		this.countryFaces = countryFaces;
+		this.faces = faces;
+		this.vertices = vertices;
 	}
 
-	select(iso_code: string, duration: number = 500, extrusion: number = 0.01) {
+	selectCountry(iso_code: string, duration: number = 500, extrusion: number = 0.01) {
 		const faces = this.countryFaces.get(iso_code);
 		if (!faces) return;
 
@@ -267,7 +264,7 @@ export class Globe extends Mesh<Geometry, Program> {
 		});
 	}
 
-	unselect(iso_code: string, duration: number = 500, extrusion: number = 0.01) {
+	unselectCountry(iso_code: string, duration: number = 500, extrusion: number = 0.01) {
 		const faces = this.countryFaces.get(iso_code);
 		if (!faces) return;
 
@@ -279,11 +276,11 @@ export class Globe extends Mesh<Geometry, Program> {
 				const progress = Math.min(elapsed / duration, 1);
 
 				const count = progress * extrusion;
+				const color = new Color("#008000");
 
 				for (const face of faces) {
 					for (const i of face) {
 						this.geometry.attributes.extrusion.data![i] = 1.06 - count;
-						const color = new Color("#008000");
 						this.geometry.attributes.color.data![i * 3] = color[0];
 						this.geometry.attributes.color.data![i * 3 + 1] = color[1];
 						this.geometry.attributes.color.data![i * 3 + 2] = color[2];
@@ -299,6 +296,102 @@ export class Globe extends Mesh<Geometry, Program> {
 					resolve();
 				}
 			};
+			requestAnimationFrame(update);
+		});
+	}
+
+	selectRegion({ lat, lon }: { lat: number; lon: number }, radius: number = 1, duration: number = 500, extrusion: number = 0.01) {
+		const radiusRad = (Math.PI / 180) * radius;
+		const threshold = Math.cos(radiusRad);
+		const center = toCartesian({ lat, lon });
+
+		const region = this.faces.filter((f) => {
+			const a = this.vertices[f[0]];
+			const b = this.vertices[f[1]];
+			const c = this.vertices[f[2]];
+
+			const centroid = a
+				.clone()
+				.add(b)
+				.add(c)
+				.scale(1 / 3)
+				.normalize();
+
+			return center.dot(centroid) >= threshold;
+		});
+
+		const start = performance.now();
+		return new Promise<void>((resolve) => {
+			const update = (now: number) => {
+				const elapsed = now - start;
+				const progress = Math.min(elapsed / duration, 1);
+				const extrudeValue = 1.05 + progress * extrusion;
+				const color = new Color("#AA0000");
+
+				for (const face of region) {
+					for (const i of face) {
+						this.geometry.attributes.extrusion.data![i] = extrudeValue;
+						this.geometry.attributes.color.data![i * 3] = color.r;
+						this.geometry.attributes.color.data![i * 3 + 1] = color.g;
+						this.geometry.attributes.color.data![i * 3 + 2] = color.b;
+					}
+				}
+
+				this.geometry.attributes.extrusion.needsUpdate = true;
+				this.geometry.attributes.color.needsUpdate = true;
+
+				if (progress < 1) requestAnimationFrame(update);
+				else resolve();
+			};
+
+			requestAnimationFrame(update);
+		});
+	}
+
+	unselectRegion({ lat, lon }: { lat: number; lon: number }, radius: number = 1, duration: number = 500, extrusion: number = 0.01) {
+		const radiusRad = (Math.PI / 180) * radius;
+		const threshold = Math.cos(radiusRad);
+		const center = toCartesian({ lat, lon });
+
+		const region = this.faces.filter((f) => {
+			const a = this.vertices[f[0]];
+			const b = this.vertices[f[1]];
+			const c = this.vertices[f[2]];
+
+			const centroid = a
+				.clone()
+				.add(b)
+				.add(c)
+				.scale(1 / 3)
+				.normalize();
+
+			return center.dot(centroid) >= threshold;
+		});
+
+		const start = performance.now();
+		return new Promise<void>((resolve) => {
+			const update = (now: number) => {
+				const elapsed = now - start;
+				const progress = Math.min(elapsed / duration, 1);
+				const count = progress * extrusion;
+				const color = new Color("#008000");
+
+				for (const face of region) {
+					for (const i of face) {
+						this.geometry.attributes.extrusion.data![i] = 1.06 - count;
+						this.geometry.attributes.color.data![i * 3] = color.r;
+						this.geometry.attributes.color.data![i * 3 + 1] = color.g;
+						this.geometry.attributes.color.data![i * 3 + 2] = color.b;
+					}
+				}
+
+				this.geometry.attributes.extrusion.needsUpdate = true;
+				this.geometry.attributes.color.needsUpdate = true;
+
+				if (progress < 1) requestAnimationFrame(update);
+				else resolve();
+			};
+
 			requestAnimationFrame(update);
 		});
 	}
