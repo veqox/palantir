@@ -1,6 +1,197 @@
 #![no_std]
 #![no_main]
 
+use core::{
+    ffi::c_long,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+};
+
+use aya_ebpf::{
+    bindings::{BPF_RB_FORCE_WAKEUP, TC_ACT_OK},
+    helpers::{bpf_get_current_pid_tgid, generated::bpf_ktime_get_ns},
+    macros::{classifier, map},
+    maps::RingBuf,
+    programs::TcContext,
+};
+use aya_log_ebpf::warn;
+use ebpf_common::{
+    eth::{ETH_TYPE_IPV4, ETH_TYPE_IPV6, EthHdr},
+    event::{Direction, RawEvent},
+    ip::{
+        IP_PROTO_HOP_OPT, IP_PROTO_IPV6_FRAG, IP_PROTO_IPV6_OPTS, IP_PROTO_IPV6_ROUTE,
+        IP_PROTO_TCP, IP_PROTO_UDP, IPV6_MAX_EXTENSION_HEADER_COUNT, Ipv4Hdr, Ipv6Hdr,
+    },
+    tcp::TcpHdr,
+    udp::UdpHdr,
+};
+
+#[map]
+static EVENTS: RingBuf = RingBuf::with_byte_size(4096 * 20, 0);
+
+#[classifier]
+pub fn tc_ingress(ctx: TcContext) -> i32 {
+    match try_handle_packet(&ctx, Direction::Ingress) {
+        _ => TC_ACT_OK,
+    }
+}
+
+#[classifier]
+pub fn tc_egress(ctx: TcContext) -> i32 {
+    match try_handle_packet(&ctx, Direction::Egress) {
+        _ => TC_ACT_OK,
+    }
+}
+
+fn try_handle_packet(ctx: &TcContext, direction: Direction) -> Result<(), c_long> {
+    let pid = bpf_get_current_pid_tgid() as u32;
+    let ts_offset_ns = unsafe { bpf_ktime_get_ns() };
+
+    let eth_hdr = ctx.load::<EthHdr>(0)?;
+    let eth_type = u16::from_be(eth_hdr.eth_type);
+
+    let event = match eth_type {
+        ETH_TYPE_IPV4 => {
+            let ip_hdr = ctx.load::<Ipv4Hdr>(size_of::<EthHdr>())?;
+            let src_addr = IpAddr::V4(Ipv4Addr::from_octets(ip_hdr.src_addr));
+            let dst_addr = IpAddr::V4(Ipv4Addr::from_octets(ip_hdr.dst_addr));
+
+            let proto = ip_hdr.proto;
+            let src_port;
+            let dst_port;
+            match proto {
+                IP_PROTO_TCP => {
+                    let tcp_hdr = ctx.load::<TcpHdr>(size_of::<EthHdr>() + size_of::<Ipv4Hdr>())?;
+                    src_port = u16::from_be_bytes(tcp_hdr.src);
+                    dst_port = u16::from_be_bytes(tcp_hdr.dst);
+                }
+                IP_PROTO_UDP => {
+                    let udp_hdr = ctx.load::<UdpHdr>(size_of::<EthHdr>() + size_of::<Ipv4Hdr>())?;
+                    src_port = u16::from_be_bytes(udp_hdr.src);
+                    dst_port = u16::from_be_bytes(udp_hdr.dst);
+                }
+                _ => {
+                    warn!(ctx, "Unhandled ipv4 protocol {}", proto);
+                    return Ok(());
+                }
+            };
+
+            let frags = u16::from_be_bytes(ip_hdr.frags);
+            let frag_flags = (frags >> 13) as u8;
+            let frag_offset = frags & 0x1FFF;
+
+            let fragment = (frag_flags & 0b001) != 0 && frag_offset == 0;
+            let last_fragment = (frag_flags & 0b001) == 0 && frag_offset == 0;
+            let bytes = u16::from_be_bytes(ip_hdr.tot_len);
+
+            RawEvent {
+                pid,
+                src_addr,
+                dst_addr,
+                src_port,
+                dst_port,
+                ts_offset_ns,
+                proto,
+                fragment,
+                last_fragment,
+                direction,
+                bytes,
+            }
+        }
+        ETH_TYPE_IPV6 => {
+            let ip_hdr = ctx.load::<Ipv6Hdr>(size_of::<EthHdr>())?;
+            let src_addr = IpAddr::V6(Ipv6Addr::from_octets(ip_hdr.src_addr));
+            let dst_addr = IpAddr::V6(Ipv6Addr::from_octets(ip_hdr.dst_addr));
+
+            let mut offset = size_of::<EthHdr>() + size_of::<Ipv6Hdr>();
+            let mut next_header = ip_hdr.next_hdr;
+            let mut fragment = false;
+            let mut last_fragment = false;
+            let mut proto: u8 = 0;
+            let mut src_port: u16 = 0;
+            let mut dst_port: u16 = 0;
+
+            for _ in 0..IPV6_MAX_EXTENSION_HEADER_COUNT {
+                if offset + 1 >= ctx.data_end() - ctx.data() {
+                    return Ok(());
+                }
+
+                match next_header {
+                    IP_PROTO_HOP_OPT | IP_PROTO_IPV6_ROUTE | IP_PROTO_IPV6_OPTS => {
+                        let extension_header_length = ctx.load::<u8>(offset + 1)?;
+                        offset += (extension_header_length as usize + 1) * 8;
+                    }
+                    IP_PROTO_IPV6_FRAG => {
+                        fragment = true;
+
+                        let frag_field = u16::from_be(ctx.load::<u16>(offset + 2)?);
+                        let frag_offset = frag_field >> 3;
+
+                        last_fragment = (frag_field & 0b001) != 0 && frag_offset != 0;
+
+                        const IPV6_FRAG_HDR_LEN: usize = 8;
+
+                        offset += IPV6_FRAG_HDR_LEN;
+                    }
+
+                    IP_PROTO_TCP => {
+                        proto = IP_PROTO_TCP;
+
+                        let tcp_hdr =
+                            ctx.load::<TcpHdr>(size_of::<EthHdr>() + size_of::<Ipv4Hdr>())?;
+                        src_port = u16::from_be_bytes(tcp_hdr.src);
+                        dst_port = u16::from_be_bytes(tcp_hdr.dst);
+                        break;
+                    }
+                    IP_PROTO_UDP => {
+                        proto = IP_PROTO_UDP;
+
+                        let udp_hdr =
+                            ctx.load::<UdpHdr>(size_of::<EthHdr>() + size_of::<Ipv4Hdr>())?;
+                        src_port = u16::from_be_bytes(udp_hdr.src);
+                        dst_port = u16::from_be_bytes(udp_hdr.dst);
+                        break;
+                    }
+                    _ => return Ok(()),
+                }
+
+                next_header = ctx.load::<u8>(offset)?;
+            }
+
+            let bytes = u16::from_be_bytes(ip_hdr.payload_len);
+
+            RawEvent {
+                pid,
+                src_addr,
+                dst_addr,
+                src_port,
+                dst_port,
+                ts_offset_ns,
+                proto,
+                fragment,
+                last_fragment,
+                direction,
+                bytes,
+            }
+        }
+        _ => {
+            warn!(ctx, "Unkown eth_type {}", eth_type);
+            return Ok(());
+        }
+    };
+
+    match EVENTS.reserve::<RawEvent>(0) {
+        Some(mut entry) => {
+            entry.write(event);
+            entry.submit(BPF_RB_FORCE_WAKEUP.into());
+        }
+        None => {
+            warn!(ctx, "EVENTS is full: skipping");
+        }
+    };
+
+    Ok(())
+}
+
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
