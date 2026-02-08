@@ -1,8 +1,8 @@
 [package]
 name = "palantir"
 version = "0.1.0"
-edition.workspace = true
-license.workspace = true
+edition = { workspace = true }
+license = { workspace = true }
 
 [[bin]]
 name = "palantir"
@@ -11,29 +11,7 @@ path = "src/main.rs"
 [dependencies]
 aya = { workspace = true }
 aya-log = { workspace = true }
-libc = { workspace = true }
-tokio = { workspace = true, features = [
-    "macros",
-    "rt",
-    "rt-multi-thread",
-    "net",
-    "signal",
-] }
-axum = { workspace = true, features = ["http1", "http2", "tokio", "macros", "tower-log"] }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "tracing-log"] }
-futures-util = { workspace = true }
-palantir-ebpf-common = { workspace = true, features = ["std"] }
-async-stream = { workspace = true }
-chrono = { workspace = true }
-serde_json = { workspace = true, features = ["std"]}
-serde = { workspace = true, features = ["derive"] }
-reqwest = { workspace = true, features = ["http2", "native-tls", "gzip", "json"] }
-tower-http = { workspace = true, features = ["trace", "cors"] }
-net = { workspace = true, features = ["serde"] }
-maxminddb = { workspace = true, features = ["mmap", "simdutf8"] }
-my_country = { workspace = true, features = ["alpha2", "geo", "all_countries"] }
 
 [build-dependencies]
 aya-build = { workspace = true }
-palantir-ebpf = { path = "../palantir-ebpf" }
+cargo_metadata = { workspace = true }

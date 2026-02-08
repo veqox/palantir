@@ -1,21 +1,26 @@
-use aya_build::{
-    Toolchain, build_ebpf,
-    cargo_metadata::{self, Metadata, Package},
-};
-
-const EBPF_PACKAGE_NAME: &str = "palantir-ebpf";
+use aya_build::Toolchain;
 
 fn main() {
-    let Metadata { packages, .. } = cargo_metadata::MetadataCommand::new()
+    let cargo_metadata::Metadata { packages, .. } = cargo_metadata::MetadataCommand::new()
         .no_deps()
         .exec()
-        .expect("failed to run metadata command");
-
+        .unwrap();
     let ebpf_package = packages
         .into_iter()
-        .find(|Package { name, .. }| name.as_str() == EBPF_PACKAGE_NAME)
-        .unwrap_or_else(|| panic!("could not find package {}", EBPF_PACKAGE_NAME));
-
-    build_ebpf([ebpf_package], Toolchain::default())
-        .unwrap_or_else(|_| panic!("failed to build {}", EBPF_PACKAGE_NAME))
+        .find(|cargo_metadata::Package { name, .. }| name.as_str() == "ebpf")
+        .expect("ebpf package not found");
+    let cargo_metadata::Package {
+        name,
+        manifest_path,
+        ..
+    } = ebpf_package;
+    let ebpf_package = aya_build::Package {
+        name: name.as_str(),
+        root_dir: manifest_path
+            .parent()
+            .expect("no parent for {manifest_path}")
+            .as_str(),
+        ..Default::default()
+    };
+    aya_build::build_ebpf([ebpf_package], Toolchain::default()).unwrap()
 }
