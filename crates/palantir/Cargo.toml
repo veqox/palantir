@@ -9,8 +9,16 @@ name = "palantir"
 path = "src/main.rs"
 
 [dependencies]
+ebpf-common = { workspace = true, features = ["std"] }
+
 aya = { workspace = true }
 aya-log = { workspace = true }
+
+libc = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "net", "sync", "time"] }
+log = { workspace = true }
+env_logger = { workspace = true }
+maxminddb = { workspace = true, features = ["mmap"] }
 
 [build-dependencies]
 aya-build = { workspace = true }

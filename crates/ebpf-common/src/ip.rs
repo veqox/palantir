@@ -28,8 +28,6 @@ pub const IPV6_MAX_EXTENSION_HEADER_COUNT: usize = 8;
 
 pub const IP_PROTO_HOP_OPT: u8 = 0;
 pub const IP_PROTO_IPV4: u8 = 4;
-pub const IP_PROTO_TCP: u8 = 6;
-pub const IP_PROTO_UDP: u8 = 17;
 pub const IP_PROTO_IPV6: u8 = 41;
 pub const IP_PROTO_IPV6_ROUTE: u8 = 43;
 pub const IP_PROTO_IPV6_FRAG: u8 = 44;
