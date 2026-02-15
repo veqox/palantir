@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/ebpf",
     "crates/ebpf-common",
+    "crates/ip-metadata",
     "crates/palantir",
 ]
 default-members = ["crates/palantir"]
@@ -13,6 +14,7 @@ edition = "2024"
 
 [workspace.dependencies]
 ebpf-common = { path = "crates/ebpf-common" }
+ip-metadata = { path = "crates/ip-metadata" }
 
 aya = { git = "https://github.com/aya-rs/aya", default-features = false }
 aya-build = { git = "https://github.com/aya-rs/aya", default-features = false }
@@ -23,6 +25,7 @@ aya-log-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false
 axum = { version = "0.8.8", default-features = false }
 async-stream = { version = "0.3.6", default-features = false }
 futures-util = { version = "0.3.31", default-features = false }
+tower-http = { version = "0.6.8", default-features = false }
 
 cargo_metadata = { version = "0.23.1", default-features = false }
 which = { version = "8.0.0", default-features = false }

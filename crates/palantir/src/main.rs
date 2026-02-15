@@ -3,7 +3,7 @@
 use std::{
     collections::{HashMap, hash_map::Entry},
     convert::Infallible,
-    env,
+    env, fs,
     mem::zeroed,
     net::IpAddr,
     os::fd::AsRawFd,
@@ -25,12 +25,10 @@ use aya::{
 };
 use ebpf_common::event::{Direction, RawEvent};
 use futures_util::Stream;
+use ip_metadata::{IpMetadata, Resolver};
 use libc::{CLOCK_BOOTTIME, CLOCK_REALTIME, clock_gettime, timespec};
 use log::{debug, warn};
-use maxminddb::{
-    Reader,
-    geoip2::{self},
-};
+
 use serde::Serialize;
 use tokio::{
     io::{Interest, unix::AsyncFd},
@@ -38,6 +36,7 @@ use tokio::{
     sync::{Mutex, broadcast},
     time::sleep,
 };
+use tower_http::cors::{self, CorsLayer};
 
 #[derive(Serialize, Clone, Debug)]
 struct Config {
@@ -71,26 +70,10 @@ enum Event {
 #[derive(Serialize, Clone)]
 struct Peer {
     pub addr: IpAddr,
-    pub location: Location,
+    pub metadata: IpMetadata,
     pub ingress_bytes: u64,
     pub egress_bytes: u64,
     pub last_packet_ts: SystemTime,
-}
-
-#[derive(Serialize, Clone)]
-#[serde(rename_all = "snake_case")]
-enum Location {
-    City {
-        lat: f64,
-        lon: f64,
-        city_name: String,
-        country_iso_code: String,
-        accuracy_radius: u16,
-    },
-    RegisteredCountry {
-        country_iso_code: String,
-    },
-    Unknown,
 }
 
 #[tokio::main]
@@ -129,10 +112,18 @@ async fn main() {
         let state = state.clone();
         let mut ebpf = init_ebpf(&state.config);
         let boot_time = boot_time();
+        let resolver = unsafe {
+            Resolver::new(
+                maxminddb::Reader::open_mmap("assets/asn.mmdb").expect("failed to open asn db"),
+                maxminddb::Reader::open_mmap("assets/geo.mmdb").expect("failed to open geo db"),
+                serde_json::from_slice(
+                    &fs::read("assets/country-metadata.json").expect("failed to read metadat file"),
+                )
+                .expect("failed to parse metadata file"),
+            )
+        };
 
         async move {
-            let reader = unsafe { Reader::open_mmap("assets/GeoLite2-City.mmdb") }.unwrap();
-
             let mut events = RingBuf::try_from(ebpf.map_mut("EVENTS").unwrap()).unwrap();
 
             let poll = AsyncFd::new(events.as_raw_fd()).unwrap();
@@ -169,7 +160,7 @@ async fn main() {
                         Entry::Vacant(entry) => {
                             let peer = entry.insert(Peer {
                                 addr: peer_addr,
-                                location: resolve_location(&reader, peer_addr),
+                                metadata: resolver.lookup(peer_addr),
                                 ingress_bytes: 0,
                                 egress_bytes: 0,
                                 last_packet_ts: raw_event.timestamp(boot_time),
@@ -213,6 +204,7 @@ async fn main() {
     let app = Router::new()
         .route("/events", get(handle_events))
         .route("/config", get(handle_config))
+        .layer(CorsLayer::new().allow_origin(cors::Any))
         .with_state(state);
 
     let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
@@ -308,41 +300,4 @@ fn init_ebpf(config: &Config) -> Ebpf {
     }
 
     ebpf
-}
-
-fn resolve_location<R>(reader: &Reader<R>, addr: IpAddr) -> Location
-where
-    R: AsRef<[u8]>,
-{
-    let record = match reader.lookup(addr) {
-        Ok(r) if r.has_data() => match r.decode::<geoip2::City>() {
-            Ok(Some(r)) => r,
-            _ => return Location::Unknown,
-        },
-        _ => return Location::Unknown,
-    };
-
-    if let (Some(lat), Some(lon), Some(accuracy_radius), Some(country_iso_code), Some(city_name)) = (
-        record.location.latitude,
-        record.location.longitude,
-        record.location.accuracy_radius,
-        record.country.iso_code,
-        record.city.names.english,
-    ) {
-        return Location::City {
-            lat,
-            lon,
-            country_iso_code: country_iso_code.to_string(),
-            city_name: city_name.to_string(),
-            accuracy_radius,
-        };
-    }
-
-    if let Some(country_iso_code) = record.registered_country.iso_code {
-        return Location::RegisteredCountry {
-            country_iso_code: country_iso_code.to_string(),
-        };
-    }
-
-    Location::Unknown
 }

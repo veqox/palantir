@@ -1,0 +1,1040 @@
+{
+  "FJ": {
+    "country_name": "Fiji",
+    "lat": -17.826099,
+    "lon": 177.975428,
+    "country_iso_code": "FJ"
+  },
+  "TZ": {
+    "country_name": "Tanzania",
+    "lat": -6.051866,
+    "lon": 34.959183,
+    "country_iso_code": "TZ"
+  },
+  "EH": {
+    "country_name": "Western Sahara",
+    "lat": 23.967592,
+    "lon": -12.630304,
+    "country_iso_code": "EH"
+  },
+  "CA": {
+    "country_name": "Canada",
+    "lat": 60.324287,
+    "lon": -101.9107,
+    "country_iso_code": "CA"
+  },
+  "US": {
+    "country_name": "United States of America",
+    "lat": 39.538479,
+    "lon": -97.482602,
+    "country_iso_code": "US"
+  },
+  "KZ": {
+    "country_name": "Kazakhstan",
+    "lat": 49.054149,
+    "lon": 68.685548,
+    "country_iso_code": "KZ"
+  },
+  "UZ": {
+    "country_name": "Uzbekistan",
+    "lat": 41.693603,
+    "lon": 64.005429,
+    "country_iso_code": "UZ"
+  },
+  "PG": {
+    "country_name": "Papua New Guinea",
+    "lat": -5.695285,
+    "lon": 143.910216,
+    "country_iso_code": "PG"
+  },
+  "ID": {
+    "country_name": "Indonesia",
+    "lat": -0.954404,
+    "lon": 101.892949,
+    "country_iso_code": "ID"
+  },
+  "AR": {
+    "country_name": "Argentina",
+    "lat": -33.501159,
+    "lon": -64.173331,
+    "country_iso_code": "AR"
+  },
+  "CL": {
+    "country_name": "Chile",
+    "lat": -38.151771,
+    "lon": -72.318871,
+    "country_iso_code": "CL"
+  },
+  "CD": {
+    "country_name": "Democratic Republic of the Congo",
+    "lat": -1.858167,
+    "lon": 23.458829,
+    "country_iso_code": "CD"
+  },
+  "SO": {
+    "country_name": "Somalia",
+    "lat": 3.568925,
+    "lon": 45.19238,
+    "country_iso_code": "SO"
+  },
+  "KE": {
+    "country_name": "Kenya",
+    "lat": 0.549043,
+    "lon": 37.907632,
+    "country_iso_code": "KE"
+  },
+  "SD": {
+    "country_name": "Sudan",
+    "lat": 16.330746,
+    "lon": 29.260657,
+    "country_iso_code": "SD"
+  },
+  "TD": {
+    "country_name": "Chad",
+    "lat": 15.142959,
+    "lon": 18.645041,
+    "country_iso_code": "TD"
+  },
+  "HT": {
+    "country_name": "Haiti",
+    "lat": 19.263784,
+    "lon": -72.224051,
+    "country_iso_code": "HT"
+  },
+  "DO": {
+    "country_name": "Dominican Republic",
+    "lat": 19.104137,
+    "lon": -70.653998,
+    "country_iso_code": "DO"
+  },
+  "RU": {
+    "country_name": "Russia",
+    "lat": 58.249357,
+    "lon": 44.686469,
+    "country_iso_code": "RU"
+  },
+  "BS": {
+    "country_name": "The Bahamas",
+    "lat": 26.401789,
+    "lon": -77.146688,
+    "country_iso_code": "BS"
+  },
+  "FK": {
+    "country_name": "Falkland Islands",
+    "lat": -51.608913,
+    "lon": -58.738602,
+    "country_iso_code": "FK"
+  },
+  "-99": {
+    "country_name": "Kosovo",
+    "lat": 42.593587,
+    "lon": 20.860719,
+    "country_iso_code": "-99"
+  },
+  "GL": {
+    "country_name": "Greenland",
+    "lat": 74.319387,
+    "lon": -39.335251,
+    "country_iso_code": "GL"
+  },
+  "TF": {
+    "country_name": "French Southern and Antarctic Lands",
+    "lat": -49.303721,
+    "lon": 69.122136,
+    "country_iso_code": "TF"
+  },
+  "TL": {
+    "country_name": "East Timor",
+    "lat": -8.803705,
+    "lon": 125.854679,
+    "country_iso_code": "TL"
+  },
+  "ZA": {
+    "country_name": "South Africa",
+    "lat": -29.708776,
+    "lon": 23.665734,
+    "country_iso_code": "ZA"
+  },
+  "LS": {
+    "country_name": "Lesotho",
+    "lat": -29.480158,
+    "lon": 28.246639,
+    "country_iso_code": "LS"
+  },
+  "MX": {
+    "country_name": "Mexico",
+    "lat": 23.919988,
+    "lon": -102.289448,
+    "country_iso_code": "MX"
+  },
+  "UY": {
+    "country_name": "Uruguay",
+    "lat": -32.961127,
+    "lon": -55.966942,
+    "country_iso_code": "UY"
+  },
+  "BR": {
+    "country_name": "Brazil",
+    "lat": -12.098687,
+    "lon": -49.55945,
+    "country_iso_code": "BR"
+  },
+  "BO": {
+    "country_name": "Bolivia",
+    "lat": -16.666015,
+    "lon": -64.593433,
+    "country_iso_code": "BO"
+  },
+  "PE": {
+    "country_name": "Peru",
+    "lat": -12.976679,
+    "lon": -72.90016,
+    "country_iso_code": "PE"
+  },
+  "CO": {
+    "country_name": "Colombia",
+    "lat": 3.373111,
+    "lon": -73.174347,
+    "country_iso_code": "CO"
+  },
+  "PA": {
+    "country_name": "Panama",
+    "lat": 8.72198,
+    "lon": -80.352106,
+    "country_iso_code": "PA"
+  },
+  "CR": {
+    "country_name": "Costa Rica",
+    "lat": 10.0651,
+    "lon": -84.077922,
+    "country_iso_code": "CR"
+  },
+  "NI": {
+    "country_name": "Nicaragua",
+    "lat": 12.670697,
+    "lon": -85.069347,
+    "country_iso_code": "NI"
+  },
+  "HN": {
+    "country_name": "Honduras",
+    "lat": 14.794801,
+    "lon": -86.887604,
+    "country_iso_code": "HN"
+  },
+  "SV": {
+    "country_name": "El Salvador",
+    "lat": 13.685371,
+    "lon": -88.890124,
+    "country_iso_code": "SV"
+  },
+  "GT": {
+    "country_name": "Guatemala",
+    "lat": 14.982133,
+    "lon": -90.497134,
+    "country_iso_code": "GT"
+  },
+  "BZ": {
+    "country_name": "Belize",
+    "lat": 17.202068,
+    "lon": -88.712962,
+    "country_iso_code": "BZ"
+  },
+  "VE": {
+    "country_name": "Venezuela",
+    "lat": 7.182476,
+    "lon": -64.599381,
+    "country_iso_code": "VE"
+  },
+  "GY": {
+    "country_name": "Guyana",
+    "lat": 5.124317,
+    "lon": -58.942643,
+    "country_iso_code": "GY"
+  },
+  "SR": {
+    "country_name": "Suricountry_name",
+    "lat": 4.143987,
+    "lon": -55.91094,
+    "country_iso_code": "SR"
+  },
+  "EC": {
+    "country_name": "Ecuador",
+    "lat": -1.259076,
+    "lon": -78.188375,
+    "country_iso_code": "EC"
+  },
+  "PR": {
+    "country_name": "Puerto Rico",
+    "lat": 18.234668,
+    "lon": -66.481065,
+    "country_iso_code": "PR"
+  },
+  "JM": {
+    "country_name": "Jamaica",
+    "lat": 18.137124,
+    "lon": -77.318767,
+    "country_iso_code": "JM"
+  },
+  "CU": {
+    "country_name": "Cuba",
+    "lat": 21.334024,
+    "lon": -77.975855,
+    "country_iso_code": "CU"
+  },
+  "ZW": {
+    "country_name": "Zimbabwe",
+    "lat": -18.91164,
+    "lon": 29.925444,
+    "country_iso_code": "ZW"
+  },
+  "BW": {
+    "country_name": "Botswana",
+    "lat": -22.102634,
+    "lon": 24.179216,
+    "country_iso_code": "BW"
+  },
+  "NA": {
+    "country_name": "Namibia",
+    "lat": -20.575298,
+    "lon": 17.108166,
+    "country_iso_code": "NA"
+  },
+  "SN": {
+    "country_name": "Senegal",
+    "lat": 15.138125,
+    "lon": -14.778586,
+    "country_iso_code": "SN"
+  },
+  "ML": {
+    "country_name": "Mali",
+    "lat": 18.692713,
+    "lon": -2.038455,
+    "country_iso_code": "ML"
+  },
+  "MR": {
+    "country_name": "Mauritania",
+    "lat": 19.587062,
+    "lon": -9.740299,
+    "country_iso_code": "MR"
+  },
+  "BJ": {
+    "country_name": "Benin",
+    "lat": 10.324775,
+    "lon": 2.352018,
+    "country_iso_code": "BJ"
+  },
+  "NE": {
+    "country_name": "Niger",
+    "lat": 17.446195,
+    "lon": 9.504356,
+    "country_iso_code": "NE"
+  },
+  "NG": {
+    "country_name": "Nigeria",
+    "lat": 9.439799,
+    "lon": 7.50322,
+    "country_iso_code": "NG"
+  },
+  "CM": {
+    "country_name": "Cameroon",
+    "lat": 4.585041,
+    "lon": 12.473488,
+    "country_iso_code": "CM"
+  },
+  "TG": {
+    "country_name": "Togo",
+    "lat": 8.80722,
+    "lon": 1.058113,
+    "country_iso_code": "TG"
+  },
+  "GH": {
+    "country_name": "Ghana",
+    "lat": 7.717639,
+    "lon": -1.036941,
+    "country_iso_code": "GH"
+  },
+  "CI": {
+    "country_name": "Ivory Coast",
+    "lat": 7.49139,
+    "lon": -5.568618,
+    "country_iso_code": "CI"
+  },
+  "GN": {
+    "country_name": "Guinea",
+    "lat": 10.618516,
+    "lon": -10.016402,
+    "country_iso_code": "GN"
+  },
+  "GW": {
+    "country_name": "Guinea-Bissau",
+    "lat": 12.163712,
+    "lon": -14.52413,
+    "country_iso_code": "GW"
+  },
+  "LR": {
+    "country_name": "Liberia",
+    "lat": 6.447177,
+    "lon": -9.460379,
+    "country_iso_code": "LR"
+  },
+  "SL": {
+    "country_name": "Sierra Leone",
+    "lat": 8.617449,
+    "lon": -11.763677,
+    "country_iso_code": "SL"
+  },
+  "BF": {
+    "country_name": "Burkina Faso",
+    "lat": 12.673048,
+    "lon": -1.36388,
+    "country_iso_code": "BF"
+  },
+  "CF": {
+    "country_name": "Central African Republic",
+    "lat": 6.989681,
+    "lon": 20.906897,
+    "country_iso_code": "CF"
+  },
+  "CG": {
+    "country_name": "Republic of the Congo",
+    "lat": 0.142331,
+    "lon": 15.9005,
+    "country_iso_code": "CG"
+  },
+  "GA": {
+    "country_name": "Gabon",
+    "lat": -0.437739,
+    "lon": 11.835939,
+    "country_iso_code": "GA"
+  },
+  "GQ": {
+    "country_name": "Equatorial Guinea",
+    "lat": 2.333,
+    "lon": 8.9902,
+    "country_iso_code": "GQ"
+  },
+  "ZM": {
+    "country_name": "Zambia",
+    "lat": -14.660804,
+    "lon": 26.395298,
+    "country_iso_code": "ZM"
+  },
+  "MW": {
+    "country_name": "Malawi",
+    "lat": -13.386737,
+    "lon": 33.608082,
+    "country_iso_code": "MW"
+  },
+  "MZ": {
+    "country_name": "Mozambique",
+    "lat": -13.94323,
+    "lon": 37.83789,
+    "country_iso_code": "MZ"
+  },
+  "SZ": {
+    "country_name": "Eswatini",
+    "lat": -26.533676,
+    "lon": 31.467264,
+    "country_iso_code": "SZ"
+  },
+  "AO": {
+    "country_name": "Angola",
+    "lat": -12.182762,
+    "lon": 17.984249,
+    "country_iso_code": "AO"
+  },
+  "BI": {
+    "country_name": "Burundi",
+    "lat": -3.332836,
+    "lon": 29.917086,
+    "country_iso_code": "BI"
+  },
+  "IL": {
+    "country_name": "Israel",
+    "lat": 30.911148,
+    "lon": 34.847915,
+    "country_iso_code": "IL"
+  },
+  "LB": {
+    "country_name": "Lebanon",
+    "lat": 34.133368,
+    "lon": 35.992892,
+    "country_iso_code": "LB"
+  },
+  "MG": {
+    "country_name": "Madagascar",
+    "lat": -18.628288,
+    "lon": 46.704241,
+    "country_iso_code": "MG"
+  },
+  "PS": {
+    "country_name": "Palestine",
+    "lat": 32.047431,
+    "lon": 35.291341,
+    "country_iso_code": "PS"
+  },
+  "GM": {
+    "country_name": "The Gambia",
+    "lat": 13.641721,
+    "lon": -14.998318,
+    "country_iso_code": "GM"
+  },
+  "TN": {
+    "country_name": "Tunisia",
+    "lat": 33.687263,
+    "lon": 9.007881,
+    "country_iso_code": "TN"
+  },
+  "DZ": {
+    "country_name": "Algeria",
+    "lat": 27.397406,
+    "lon": 2.808241,
+    "country_iso_code": "DZ"
+  },
+  "JO": {
+    "country_name": "Jordan",
+    "lat": 30.805025,
+    "lon": 36.375991,
+    "country_iso_code": "JO"
+  },
+  "AE": {
+    "country_name": "United Arab Emirates",
+    "lat": 23.466285,
+    "lon": 54.547256,
+    "country_iso_code": "AE"
+  },
+  "QA": {
+    "country_name": "Qatar",
+    "lat": 25.237383,
+    "lon": 51.143509,
+    "country_iso_code": "QA"
+  },
+  "KW": {
+    "country_name": "Kuwait",
+    "lat": 29.413628,
+    "lon": 47.313999,
+    "country_iso_code": "KW"
+  },
+  "IQ": {
+    "country_name": "Iraq",
+    "lat": 33.09403,
+    "lon": 43.26181,
+    "country_iso_code": "IQ"
+  },
+  "OM": {
+    "country_name": "Oman",
+    "lat": 22.120427,
+    "lon": 57.336553,
+    "country_iso_code": "OM"
+  },
+  "VU": {
+    "country_name": "Vanuatu",
+    "lat": -15.37153,
+    "lon": 166.908762,
+    "country_iso_code": "VU"
+  },
+  "KH": {
+    "country_name": "Cambodia",
+    "lat": 12.647584,
+    "lon": 104.50487,
+    "country_iso_code": "KH"
+  },
+  "TH": {
+    "country_name": "Thailand",
+    "lat": 15.45974,
+    "lon": 101.073198,
+    "country_iso_code": "TH"
+  },
+  "LA": {
+    "country_name": "Laos",
+    "lat": 19.431821,
+    "lon": 102.533912,
+    "country_iso_code": "LA"
+  },
+  "MM": {
+    "country_name": "Myanmar",
+    "lat": 21.573855,
+    "lon": 95.804497,
+    "country_iso_code": "MM"
+  },
+  "VN": {
+    "country_name": "Vietnam",
+    "lat": 21.715416,
+    "lon": 105.387292,
+    "country_iso_code": "VN"
+  },
+  "KP": {
+    "country_name": "North Korea",
+    "lat": 39.885252,
+    "lon": 126.444516,
+    "country_iso_code": "KP"
+  },
+  "KR": {
+    "country_name": "South Korea",
+    "lat": 36.384924,
+    "lon": 128.129504,
+    "country_iso_code": "KR"
+  },
+  "MN": {
+    "country_name": "Mongolia",
+    "lat": 45.997488,
+    "lon": 104.150405,
+    "country_iso_code": "MN"
+  },
+  "IN": {
+    "country_name": "India",
+    "lat": 22.686852,
+    "lon": 79.358105,
+    "country_iso_code": "IN"
+  },
+  "BD": {
+    "country_name": "Bangladesh",
+    "lat": 24.214956,
+    "lon": 89.684963,
+    "country_iso_code": "BD"
+  },
+  "BT": {
+    "country_name": "Bhutan",
+    "lat": 27.536685,
+    "lon": 90.040294,
+    "country_iso_code": "BT"
+  },
+  "NP": {
+    "country_name": "Nepal",
+    "lat": 28.297925,
+    "lon": 83.639914,
+    "country_iso_code": "NP"
+  },
+  "PK": {
+    "country_name": "Pakistan",
+    "lat": 29.328389,
+    "lon": 68.545632,
+    "country_iso_code": "PK"
+  },
+  "AF": {
+    "country_name": "Afghanistan",
+    "lat": 34.164262,
+    "lon": 66.496586,
+    "country_iso_code": "AF"
+  },
+  "TJ": {
+    "country_name": "Tajikistan",
+    "lat": 38.199835,
+    "lon": 72.587276,
+    "country_iso_code": "TJ"
+  },
+  "KG": {
+    "country_name": "Kyrgyzstan",
+    "lat": 41.66854,
+    "lon": 74.532637,
+    "country_iso_code": "KG"
+  },
+  "TM": {
+    "country_name": "Turkmenistan",
+    "lat": 39.855246,
+    "lon": 58.676647,
+    "country_iso_code": "TM"
+  },
+  "IR": {
+    "country_name": "Iran",
+    "lat": 32.166225,
+    "lon": 54.931495,
+    "country_iso_code": "IR"
+  },
+  "SY": {
+    "country_name": "Syria",
+    "lat": 35.006636,
+    "lon": 38.277783,
+    "country_iso_code": "SY"
+  },
+  "AM": {
+    "country_name": "Armenia",
+    "lat": 40.459077,
+    "lon": 44.800564,
+    "country_iso_code": "AM"
+  },
+  "SE": {
+    "country_name": "Sweden",
+    "lat": 65.85918,
+    "lon": 19.01705,
+    "country_iso_code": "SE"
+  },
+  "BY": {
+    "country_name": "Belarus",
+    "lat": 53.821888,
+    "lon": 28.417701,
+    "country_iso_code": "BY"
+  },
+  "UA": {
+    "country_name": "Ukraine",
+    "lat": 49.724739,
+    "lon": 32.140865,
+    "country_iso_code": "UA"
+  },
+  "PL": {
+    "country_name": "Poland",
+    "lat": 51.990316,
+    "lon": 19.490468,
+    "country_iso_code": "PL"
+  },
+  "AT": {
+    "country_name": "Austria",
+    "lat": 47.518859,
+    "lon": 14.130515,
+    "country_iso_code": "AT"
+  },
+  "HU": {
+    "country_name": "Hungary",
+    "lat": 47.086841,
+    "lon": 19.447867,
+    "country_iso_code": "HU"
+  },
+  "MD": {
+    "country_name": "Moldova",
+    "lat": 47.434999,
+    "lon": 28.487904,
+    "country_iso_code": "MD"
+  },
+  "RO": {
+    "country_name": "Romania",
+    "lat": 45.733237,
+    "lon": 24.972624,
+    "country_iso_code": "RO"
+  },
+  "LT": {
+    "country_name": "Lithuania",
+    "lat": 55.103703,
+    "lon": 24.089932,
+    "country_iso_code": "LT"
+  },
+  "LV": {
+    "country_name": "Latvia",
+    "lat": 57.066872,
+    "lon": 25.458723,
+    "country_iso_code": "LV"
+  },
+  "EE": {
+    "country_name": "Estonia",
+    "lat": 58.724865,
+    "lon": 25.867126,
+    "country_iso_code": "EE"
+  },
+  "DE": {
+    "country_name": "Germany",
+    "lat": 50.961733,
+    "lon": 9.678348,
+    "country_iso_code": "DE"
+  },
+  "BG": {
+    "country_name": "Bulgaria",
+    "lat": 42.508785,
+    "lon": 25.15709,
+    "country_iso_code": "BG"
+  },
+  "GR": {
+    "country_name": "Greece",
+    "lat": 39.492763,
+    "lon": 21.72568,
+    "country_iso_code": "GR"
+  },
+  "TR": {
+    "country_name": "Turkey",
+    "lat": 39.345388,
+    "lon": 34.508268,
+    "country_iso_code": "TR"
+  },
+  "AL": {
+    "country_name": "Albania",
+    "lat": 40.654855,
+    "lon": 20.11384,
+    "country_iso_code": "AL"
+  },
+  "HR": {
+    "country_name": "Croatia",
+    "lat": 45.805799,
+    "lon": 16.37241,
+    "country_iso_code": "HR"
+  },
+  "CH": {
+    "country_name": "Switzerland",
+    "lat": 46.719114,
+    "lon": 7.463965,
+    "country_iso_code": "CH"
+  },
+  "LU": {
+    "country_name": "Luxembourg",
+    "lat": 49.733732,
+    "lon": 6.07762,
+    "country_iso_code": "LU"
+  },
+  "BE": {
+    "country_name": "Belgium",
+    "lat": 50.785392,
+    "lon": 4.800448,
+    "country_iso_code": "BE"
+  },
+  "NL": {
+    "country_name": "Netherlands",
+    "lat": 52.422211,
+    "lon": 5.61144,
+    "country_iso_code": "NL"
+  },
+  "PT": {
+    "country_name": "Portugal",
+    "lat": 39.606675,
+    "lon": -8.271754,
+    "country_iso_code": "PT"
+  },
+  "ES": {
+    "country_name": "Spain",
+    "lat": 40.090953,
+    "lon": -3.464718,
+    "country_iso_code": "ES"
+  },
+  "IE": {
+    "country_name": "Ireland",
+    "lat": 53.078726,
+    "lon": -7.798588,
+    "country_iso_code": "IE"
+  },
+  "NC": {
+    "country_name": "New Caledonia",
+    "lat": -21.064697,
+    "lon": 165.084004,
+    "country_iso_code": "NC"
+  },
+  "SB": {
+    "country_name": "Solomon Islands",
+    "lat": -8.029548,
+    "lon": 159.170468,
+    "country_iso_code": "SB"
+  },
+  "NZ": {
+    "country_name": "New Zealand",
+    "lat": -39.759,
+    "lon": 172.787,
+    "country_iso_code": "NZ"
+  },
+  "AU": {
+    "country_name": "Australia",
+    "lat": -24.129522,
+    "lon": 134.04972,
+    "country_iso_code": "AU"
+  },
+  "LK": {
+    "country_name": "Sri Lanka",
+    "lat": 7.581097,
+    "lon": 80.704823,
+    "country_iso_code": "LK"
+  },
+  "CN": {
+    "country_name": "People's Republic of China",
+    "lat": 32.498178,
+    "lon": 106.337289,
+    "country_iso_code": "CN"
+  },
+  "CN-TW": {
+    "country_name": "Taiwan",
+    "lat": 23.652408,
+    "lon": 120.868204,
+    "country_iso_code": "CN-TW"
+  },
+  "IT": {
+    "country_name": "Italy",
+    "lat": 44.732482,
+    "lon": 11.076907,
+    "country_iso_code": "IT"
+  },
+  "DK": {
+    "country_name": "Denmark",
+    "lat": 55.966965,
+    "lon": 9.018163,
+    "country_iso_code": "DK"
+  },
+  "GB": {
+    "country_name": "United Kingdom",
+    "lat": 54.402739,
+    "lon": -2.116346,
+    "country_iso_code": "GB"
+  },
+  "IS": {
+    "country_name": "Iceland",
+    "lat": 64.779286,
+    "lon": -18.673711,
+    "country_iso_code": "IS"
+  },
+  "AZ": {
+    "country_name": "Azerbaijan",
+    "lat": 40.402387,
+    "lon": 47.210994,
+    "country_iso_code": "AZ"
+  },
+  "GE": {
+    "country_name": "Georgia",
+    "lat": 41.870087,
+    "lon": 43.735724,
+    "country_iso_code": "GE"
+  },
+  "PH": {
+    "country_name": "Philippines",
+    "lat": 11.198,
+    "lon": 122.465,
+    "country_iso_code": "PH"
+  },
+  "MY": {
+    "country_name": "Malaysia",
+    "lat": 2.528667,
+    "lon": 113.83708,
+    "country_iso_code": "MY"
+  },
+  "BN": {
+    "country_name": "Brunei",
+    "lat": 4.448298,
+    "lon": 114.551943,
+    "country_iso_code": "BN"
+  },
+  "SI": {
+    "country_name": "Slovenia",
+    "lat": 46.06076,
+    "lon": 14.915312,
+    "country_iso_code": "SI"
+  },
+  "FI": {
+    "country_name": "Finland",
+    "lat": 63.252361,
+    "lon": 27.276449,
+    "country_iso_code": "FI"
+  },
+  "SK": {
+    "country_name": "Slovakia",
+    "lat": 48.734044,
+    "lon": 19.049868,
+    "country_iso_code": "SK"
+  },
+  "CZ": {
+    "country_name": "Czech Republic",
+    "lat": 49.882364,
+    "lon": 15.377555,
+    "country_iso_code": "CZ"
+  },
+  "ER": {
+    "country_name": "Eritrea",
+    "lat": 15.787401,
+    "lon": 38.285566,
+    "country_iso_code": "ER"
+  },
+  "JP": {
+    "country_name": "Japan",
+    "lat": 36.142538,
+    "lon": 138.44217,
+    "country_iso_code": "JP"
+  },
+  "PY": {
+    "country_name": "Paraguay",
+    "lat": -21.674509,
+    "lon": -60.146394,
+    "country_iso_code": "PY"
+  },
+  "YE": {
+    "country_name": "Yemen",
+    "lat": 15.328226,
+    "lon": 45.874383,
+    "country_iso_code": "YE"
+  },
+  "SA": {
+    "country_name": "Saudi Arabia",
+    "lat": 23.806908,
+    "lon": 44.6996,
+    "country_iso_code": "SA"
+  },
+  "AQ": {
+    "country_name": "Antarctica",
+    "lat": -79.843222,
+    "lon": 35.885455,
+    "country_iso_code": "AQ"
+  },
+  "CY": {
+    "country_name": "Cyprus",
+    "lat": 34.913329,
+    "lon": 33.084182,
+    "country_iso_code": "CY"
+  },
+  "MA": {
+    "country_name": "Morocco",
+    "lat": 31.650723,
+    "lon": -7.187296,
+    "country_iso_code": "MA"
+  },
+  "EG": {
+    "country_name": "Egypt",
+    "lat": 26.186173,
+    "lon": 29.445837,
+    "country_iso_code": "EG"
+  },
+  "LY": {
+    "country_name": "Libya",
+    "lat": 26.638944,
+    "lon": 18.011015,
+    "country_iso_code": "LY"
+  },
+  "ET": {
+    "country_name": "Ethiopia",
+    "lat": 8.032795,
+    "lon": 39.0886,
+    "country_iso_code": "ET"
+  },
+  "DJ": {
+    "country_name": "Djibouti",
+    "lat": 11.976343,
+    "lon": 42.498825,
+    "country_iso_code": "DJ"
+  },
+  "UG": {
+    "country_name": "Uganda",
+    "lat": 1.972589,
+    "lon": 32.948555,
+    "country_iso_code": "UG"
+  },
+  "RW": {
+    "country_name": "Rwanda",
+    "lat": -1.897196,
+    "lon": 30.103894,
+    "country_iso_code": "RW"
+  },
+  "BA": {
+    "country_name": "Bosnia and Herzegovina",
+    "lat": 44.091051,
+    "lon": 18.06841,
+    "country_iso_code": "BA"
+  },
+  "MK": {
+    "country_name": "North Macedonia",
+    "lat": 41.558223,
+    "lon": 21.555839,
+    "country_iso_code": "MK"
+  },
+  "RS": {
+    "country_name": "Serbia",
+    "lat": 44.189919,
+    "lon": 20.787989,
+    "country_iso_code": "RS"
+  },
+  "ME": {
+    "country_name": "Montenegro",
+    "lat": 42.803101,
+    "lon": 19.143727,
+    "country_iso_code": "ME"
+  },
+  "TT": {
+    "country_name": "Trinidad and Tobago",
+    "lat": 10.9989,
+    "lon": -60.9184,
+    "country_iso_code": "TT"
+  },
+  "SS": {
+    "country_name": "South Sudan",
+    "lat": 7.230477,
+    "lon": 30.390151,
+    "country_iso_code": "SS"
+  }
+}
